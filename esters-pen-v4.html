@@ -77,8 +77,91 @@
   .btn.primary{background:var(--acid);color:#0d0c0b;border-color:var(--acid);font-weight:600}
   .btn.primary:hover{box-shadow:0 8px 22px -8px var(--acid-dim)}
   .btn.icon-btn{padding:9px 12px;font-size:13px;text-transform:none}
+  .btn.ghost{background:transparent}
   .hist-group{display:flex;gap:6px;align-items:center}
   .hist-depth{font-family:var(--mono);font-size:10px;color:var(--ink-faint);min-width:46px;text-align:center;letter-spacing:.04em}
+  .save-ind{
+    font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--ink-faint);
+    display:inline-flex;align-items:center;gap:5px;text-transform:uppercase;
+    padding:5px 9px;border-radius:6px;background:transparent;transition:.2s;
+  }
+  .save-ind .pip{width:6px;height:6px;border-radius:50%;background:var(--ink-faint);transition:.2s}
+  .save-ind.saving .pip{background:var(--warn);animation:saving-blink 1s ease-in-out infinite}
+  .save-ind.saved .pip{background:var(--acid);box-shadow:0 0 6px var(--acid)}
+  .save-ind.err .pip{background:var(--warn)}
+  @keyframes saving-blink{50%{opacity:.4}}
+
+  /* ---------- Restore banner ---------- */
+  .restore-banner{
+    position:fixed;top:74px;left:50%;transform:translateX(-50%);z-index:180;
+    background:var(--panel-2);border:1px solid var(--acid);border-radius:12px;
+    padding:14px 18px;display:flex;align-items:center;gap:14px;
+    box-shadow:0 18px 60px -20px #000;max-width:560px;
+  }
+  .restore-banner .icon{width:36px;height:36px;border-radius:9px;background:rgba(204,255,0,.14);
+    display:grid;place-items:center;color:var(--acid);font-family:var(--mono);font-size:18px;font-weight:700;flex:none}
+  .restore-banner .body{flex:1;min-width:0}
+  .restore-banner .ttl{font-weight:700;font-size:13.5px;letter-spacing:-.01em}
+  .restore-banner .meta{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);margin-top:2px;letter-spacing:.04em}
+
+  /* ---------- Selection bar + checkboxes ---------- */
+  .sel-bar{
+    display:none;align-items:center;gap:10px;padding:10px 12px;margin:6px 8px 0;
+    background:var(--bg);border:1px solid var(--acid);border-radius:9px;
+  }
+  .sel-bar.on{display:flex}
+  .sel-bar .n{font-family:var(--mono);font-size:11px;color:var(--acid);font-weight:600;letter-spacing:.04em}
+  .sel-bar .grow{flex:1}
+  .sel-bar .mini{padding:6px 10px;font-size:10px}
+  .sel-bar .mini.danger{color:var(--warn);border-color:rgba(255,122,69,.5)}
+  .sel-bar .mini.danger:hover{background:rgba(255,122,69,.12);border-color:var(--warn)}
+  .layer .check, .asset .check{
+    width:16px;height:16px;flex:none;border-radius:4px;border:1.5px solid var(--line-2);
+    background:var(--bg);cursor:pointer;display:grid;place-items:center;transition:.12s;
+  }
+  .layer .check:hover, .asset .check:hover{border-color:var(--ink-faint)}
+  .layer .check::after, .asset .check::after{
+    content:"";width:8px;height:8px;border-radius:1.5px;background:transparent;transition:.12s;
+  }
+  .layer.selected{background:rgba(204,255,0,.06);border-color:var(--acid)}
+  .layer.selected .check{border-color:var(--acid);background:var(--acid)}
+  .layer.selected .check::after{background:#0d0c0b}
+  .asset.selected{background:rgba(255,122,69,.07);border-color:var(--warn)}
+  .asset.selected .check{border-color:var(--warn);background:var(--warn)}
+  .asset.selected .check::after{background:#0d0c0b}
+
+  /* ---------- Changelog modal ---------- */
+  .modal-mask{
+    position:fixed;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(4px);
+    z-index:300;display:none;align-items:center;justify-content:center;padding:40px 24px;
+  }
+  .modal-mask.on{display:flex}
+  .modal{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;width:100%;max-width:780px;max-height:100%;
+    display:flex;flex-direction:column;overflow:hidden;box-shadow:0 40px 100px -40px #000;
+  }
+  .modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px}
+  .modal-head h2{font-size:17px;font-weight:700;letter-spacing:-.02em}
+  .modal-head .sub{font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:.08em;text-transform:uppercase}
+  .modal-body{flex:1;overflow-y:auto;padding:6px 20px 18px}
+  .modal-body::-webkit-scrollbar{width:9px}
+  .modal-body::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:6px;border:2px solid var(--panel)}
+  .log-item{padding:12px 0;border-bottom:1px solid var(--line)}
+  .log-item:last-child{border-bottom:0}
+  .log-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .log-time{font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:.04em}
+  .log-kind{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:5px;background:var(--line);color:var(--acid)}
+  .log-kind.asset{color:var(--warn)}
+  .log-kind.delete{color:var(--warn)}
+  .log-path{font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px}
+  .diff{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+  .diff > div{padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.5;border:1px solid var(--line-2);min-height:38px;word-break:break-word}
+  .diff .b{background:rgba(255,122,69,.08);border-color:rgba(255,122,69,.25)}
+  .diff .a{background:rgba(204,255,0,.07);border-color:rgba(204,255,0,.3)}
+  .diff .lbl{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:4px;display:block}
+  .diff img{max-width:100%;max-height:90px;border-radius:5px;display:block;margin-top:4px}
+  .modal-foot{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+  .empty-log{padding:42px 18px;text-align:center;color:var(--ink-faint);font-family:var(--mono);font-size:12px;line-height:1.7}
 
   /* ---------- Body layout ---------- */
   .main{display:grid;grid-template-columns:340px 1fr;min-height:0}
@@ -230,11 +313,13 @@
     </div>
     <div class="spacer"></div>
     <div id="fileMeta" class="file-meta hidden"><span class="dot"></span><span id="fileName">—</span></div>
+    <div id="saveInd" class="save-ind hidden"><span class="pip"></span><span id="saveTxt">idle</span></div>
     <div class="hist-group">
       <button id="undoBtn" class="btn icon-btn" disabled title="Undo (Ctrl/⌘+Z)">↶ Undo</button>
       <span id="histDepth" class="hist-depth">0 / 0</span>
       <button id="redoBtn" class="btn icon-btn" disabled title="Redo (Ctrl/⌘+Shift+Z or Ctrl+Y)">↷ Redo</button>
     </div>
+    <button id="logBtn" class="btn icon-btn hidden" title="View change log">☰ Log</button>
     <button id="newBtn" class="btn hidden">↻ New file</button>
     <button id="downloadBtn" class="btn primary" disabled>↓ Download HTML</button>
   </header>
@@ -249,6 +334,12 @@
           <button class="tab t-text active" id="tabText">Text <b id="tabTextN">0</b></button>
           <button class="tab t-assets" id="tabAssets">Assets <b id="tabAssetsN">0</b></button>
         </div>
+      </div>
+      <div id="selBar" class="sel-bar">
+        <span class="n" id="selCount">0 selected</span>
+        <div class="grow"></div>
+        <button class="mini" id="selClear">Clear</button>
+        <button class="mini danger" id="selDelete">Delete (⌫)</button>
       </div>
       <div id="layers" class="layers">
         <div class="empty-side">No file loaded yet.<br/>Drop an HTML file to detect editable text.</div>
@@ -283,6 +374,41 @@
 
 <input id="fileInput" type="file" accept=".html,.htm,text/html" class="hidden" />
 <input id="assetFileInput" type="file" class="hidden" />
+
+<div id="restoreBanner" class="restore-banner hidden">
+  <div class="icon">↺</div>
+  <div class="body">
+    <div class="ttl" id="restoreTtl">Unsaved session found</div>
+    <div class="meta" id="restoreMeta">—</div>
+  </div>
+  <button class="btn ghost" id="restoreDismiss">Discard</button>
+  <button class="btn primary" id="restoreApply">Restore</button>
+</div>
+
+<div id="logModal" class="modal-mask">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <h2>Change log</h2>
+        <div class="sub" id="logSubtitle">—</div>
+      </div>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn ghost" id="logClear">Clear log</button>
+      <button class="btn" id="logClose">Close</button>
+    </div>
+    <div class="modal-body" id="logBody">
+      <div class="empty-log">No changes yet.<br/>Edit text, swap an asset, or delete a layer to start logging.</div>
+    </div>
+    <div class="modal-foot">
+      <div style="font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:.04em">
+        Included in every export · save as PDF from your browser's print dialog
+      </div>
+      <div class="spacer" style="flex:1"></div>
+      <button class="btn" id="logDownload">↓ Download log</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -295,8 +421,15 @@
   var STYLE_ID = '__layerleaf_style';
   var MAX_HISTORY = 200;                 // industry-standard deep undo
   var COALESCE_MS = 900;                 // keystrokes within this window merge into one undo step
+  var SAVE_KEY_PREFIX = 'estersPen:session:';
+  var SAVE_DEBOUNCE_MS = 800;
+  var BINARY_BUDGET_BYTES = 4 * 1024 * 1024;   // localStorage soft cap for swapped binaries
 
   var state = { doc:null, fileName:'', highlight:true, interactive:true, baseUrl:'', exportVersion:0, layers:[], assets:[], tab:'text' };
+  var changeLog = [];               // {t,kind:'text'|'asset'|'delete',path,before,after,meta?}
+  var selection = new Set();        // set of layer-ids OR asset-ids depending on active tab
+  var lastSaveAt = 0;
+  var saveTimer = null;
 
   // ---- undo / redo ----
   var history = [];        // entries: {type:'text',layerId,before,after,t,closed} | {type:'asset',assetId,label,before,after}
@@ -316,9 +449,20 @@
     truncateRedo();
     var last = history[hIndex];
     if(last && last.type==='text' && last.layerId===layerId && !last.closed && (now - last.t) < COALESCE_MS){
-      last.after = after; last.t = now; updateHistoryUI(); return;
+      last.after = after; last.t = now; updateHistoryUI();
+      // mirror coalesce in change log: collapse into the most recent text entry for this layer
+      var lastLog = changeLog[changeLog.length-1];
+      if(lastLog && lastLog.kind==='text' && lastLog.layerId===layerId && (now - lastLog.t) < COALESCE_MS){
+        lastLog.after = after; lastLog.t = now;
+      } else {
+        logChange({kind:'text',layerId:layerId,path:pathFor(layerId,'text'),before:before,after:after});
+      }
+      scheduleSave();
+      return;
     }
     pushHistory({type:'text', layerId:layerId, before:before, after:after, t:now});
+    logChange({kind:'text',layerId:layerId,path:pathFor(layerId,'text'),before:before,after:after});
+    scheduleSave();
   }
   function closeCoalescing(){
     var last = history[hIndex];
@@ -328,15 +472,30 @@
     if(hIndex < 0){ showToast('Nothing to undo'); return; }
     var e = history[hIndex--];
     if(e.type==='text'){ applyText(e.layerId, e.before); markActive(e.layerId, true); showToast('↶ Undid text edit'); }
-    else { var rec = findAsset(e.assetId); if(rec){ applyAssetState(rec, e.before); markAssetActive(e.assetId, true); } showToast('↶ Undid '+e.label); }
+    else if(e.type==='asset'){ var rec = findAsset(e.assetId); if(rec){ applyAssetState(rec, e.before); markAssetActive(e.assetId, true); } showToast('↶ Undid '+e.label); }
+    else if(e.type==='delete'){ undoDelete(e); showToast('↶ Undid delete ('+e.deletions.length+')'); }
+    else if(e.type==='delete-asset'){ undoDeleteAsset(e); showToast('↶ Undid asset delete ('+e.deletions.length+')'); }
     updateHistoryUI();
+    scheduleSave();
   }
   function redo(){
     if(hIndex >= history.length-1){ showToast('Nothing to redo'); return; }
     var e = history[++hIndex];
     if(e.type==='text'){ applyText(e.layerId, e.after); markActive(e.layerId, true); showToast('↷ Redid text edit'); }
-    else { var rec = findAsset(e.assetId); if(rec){ applyAssetState(rec, e.after); markAssetActive(e.assetId, true); } showToast('↷ Redid '+e.label); }
+    else if(e.type==='asset'){ var rec = findAsset(e.assetId); if(rec){ applyAssetState(rec, e.after); markAssetActive(e.assetId, true); } showToast('↷ Redid '+e.label); }
+    else if(e.type==='delete'){
+      // re-apply deletion: drop the recorded ids again from the doc
+      var ids = e.deletions.map(function(d){ return d.id; });
+      selection = new Set(ids); deleteLayers(ids); clearSelection();
+      showToast('↷ Redid delete ('+e.deletions.length+')');
+    }
+    else if(e.type==='delete-asset'){
+      var aids = e.deletions.map(function(d){ return d.id; });
+      selection = new Set(aids); deleteAssets(aids); clearSelection();
+      showToast('↷ Redid asset delete ('+e.deletions.length+')');
+    }
     updateHistoryUI();
+    scheduleSave();
   }
   function resetHistory(){ history = []; hIndex = -1; updateHistoryUI(); }
   function updateHistoryUI(){
@@ -355,7 +514,13 @@
       interactiveToggle=$('interactiveToggle'), baseUrlEl=$('baseUrl'), modeHint=$('modeHint'),
       undoBtn=$('undoBtn'), redoBtn=$('redoBtn'), histDepth=$('histDepth'),
       tabText=$('tabText'), tabAssets=$('tabAssets'), tabTextN=$('tabTextN'), tabAssetsN=$('tabAssetsN'),
-      assetFileInput=$('assetFileInput');
+      assetFileInput=$('assetFileInput'),
+      saveInd=$('saveInd'), saveTxt=$('saveTxt'),
+      logBtn=$('logBtn'), logModal=$('logModal'), logBody=$('logBody'), logClose=$('logClose'),
+      logClear=$('logClear'), logDownload=$('logDownload'), logSubtitle=$('logSubtitle'),
+      selBar=$('selBar'), selCount=$('selCount'), selClear=$('selClear'), selDelete=$('selDelete'),
+      restoreBanner=$('restoreBanner'), restoreTtl=$('restoreTtl'), restoreMeta=$('restoreMeta'),
+      restoreApply=$('restoreApply'), restoreDismiss=$('restoreDismiss');
 
   // ---- helpers ----
   function hasDirectText(el){
@@ -399,6 +564,492 @@
   }
   function findLayer(id){ for(var i=0;i<state.layers.length;i++){ if(state.layers[i].id===id) return state.layers[i]; } return null; }
   function findAsset(id){ for(var i=0;i<state.assets.length;i++){ if(state.assets[i].id===id) return state.assets[i]; } return null; }
+  function pathFor(id, kind){
+    if(kind==='asset'){ var a=findAsset(id); return a ? a.path : ''; }
+    var L=findLayer(id); return L ? L.path : '';
+  }
+
+  // ---- change log ----
+  function logChange(entry){
+    entry.t = entry.t || Date.now();
+    changeLog.push(entry);
+    if(!logBtn.classList.contains('hidden')) updateLogBadge();
+  }
+  function updateLogBadge(){
+    if(!changeLog.length){ logBtn.textContent='☰ Log'; return; }
+    logBtn.textContent='☰ Log · '+changeLog.length;
+  }
+  function fmtTime(t){
+    var d=new Date(t);
+    return d.toLocaleString(undefined,{hour:'2-digit',minute:'2-digit',second:'2-digit',month:'short',day:'numeric'});
+  }
+  function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function renderLog(){
+    if(!changeLog.length){
+      logBody.innerHTML='<div class="empty-log">No changes yet.<br/>Edit text, swap an asset, or delete a layer to start logging.</div>';
+      return;
+    }
+    var html='';
+    // newest first
+    for(var i=changeLog.length-1;i>=0;i--){
+      var e=changeLog[i];
+      var kindLbl = e.kind==='text' ? 'text edit' : (e.kind==='asset' ? 'asset swap' : 'delete');
+      var kindCls = e.kind==='text' ? '' : (e.kind==='asset' ? 'asset' : 'delete');
+      html += '<div class="log-item">'+
+        '<div class="log-head">'+
+          '<span class="log-kind '+kindCls+'">'+kindLbl+'</span>'+
+          '<span class="log-time">'+fmtTime(e.t)+'</span>'+
+          '<span class="log-path">'+escapeHtml(e.path||'')+'</span>'+
+        '</div>'+
+        renderLogDiff(e)+
+      '</div>';
+    }
+    logBody.innerHTML=html;
+    logSubtitle.textContent = changeLog.length + ' change' + (changeLog.length===1?'':'s') + ' · session started ' + fmtTime(changeLog[0].t);
+  }
+  function renderLogDiff(e){
+    if(e.kind==='text'){
+      return '<div class="diff">'+
+        '<div class="b"><span class="lbl">Before</span>'+escapeHtml(e.before)+'</div>'+
+        '<div class="a"><span class="lbl">After</span>'+escapeHtml(e.after)+'</div>'+
+      '</div>';
+    }
+    if(e.kind==='asset'){
+      var b = e.before || {}, a = e.after || {};
+      var bShow = b.label || b.src || (b.swapped && b.swapped.name) || '(unchanged)';
+      var aShow = a.label || (a.swapped && a.swapped.exportPath) || (a.swapped && a.swapped.name) || '(reverted to original)';
+      var bImg = (b.thumbDataURL || b.src && /^data:image/.test(b.src) ? '<img src="'+escapeHtml(b.thumbDataURL||b.src)+'"/>' : '');
+      var aImg = (a.thumbDataURL || (a.swapped && a.swapped.dataURL && /^data:image/.test(a.swapped.dataURL)) ? '<img src="'+escapeHtml(a.thumbDataURL||a.swapped.dataURL)+'"/>' : '');
+      return '<div class="diff">'+
+        '<div class="b"><span class="lbl">Before</span>'+escapeHtml(bShow)+bImg+'</div>'+
+        '<div class="a"><span class="lbl">After</span>'+escapeHtml(aShow)+aImg+'</div>'+
+      '</div>';
+    }
+    // delete
+    return '<div class="diff">'+
+      '<div class="b"><span class="lbl">Removed element</span>'+escapeHtml(e.before&&e.before.tag||'')+(e.before&&e.before.text?'<div style="margin-top:4px;color:var(--ink-dim);font-size:12px">"'+escapeHtml(snippet(e.before.text))+'"</div>':'')+'</div>'+
+      '<div class="a"><span class="lbl">After</span>(deleted from document)</div>'+
+    '</div>';
+  }
+  function openLog(){ renderLog(); logModal.classList.add('on'); }
+  function closeLog(){ logModal.classList.remove('on'); }
+
+  // ---- changelog as a downloadable HTML doc (print-to-PDF ready) ----
+  function buildLogHTML(){
+    var rows = changeLog.map(function(e){
+      var time = fmtTime(e.t);
+      var kindLbl = e.kind==='text' ? 'Text edit' : (e.kind==='asset' ? 'Asset swap' : 'Delete');
+      var path = escapeHtml(e.path||'');
+      var diff = '';
+      if(e.kind==='text'){
+        diff = '<div class="diff"><div class="b"><div class="lbl">Before</div><div class="val">'+escapeHtml(e.before)+'</div></div>'+
+               '<div class="a"><div class="lbl">After</div><div class="val">'+escapeHtml(e.after)+'</div></div></div>';
+      } else if(e.kind==='asset'){
+        var b = e.before || {}, a = e.after || {};
+        var bShow = b.label || b.src || (b.swapped && b.swapped.name) || '(unchanged)';
+        var aShow = a.label || (a.swapped && a.swapped.exportPath) || (a.swapped && a.swapped.name) || '(reverted to original)';
+        diff = '<div class="diff"><div class="b"><div class="lbl">Before</div><div class="val">'+escapeHtml(bShow)+'</div></div>'+
+               '<div class="a"><div class="lbl">After</div><div class="val">'+escapeHtml(aShow)+'</div></div></div>';
+      } else {
+        var tag = e.before && e.before.tag || '';
+        var snipT = e.before && e.before.text ? snippet(e.before.text) : '';
+        diff = '<div class="diff"><div class="b"><div class="lbl">Removed</div><div class="val">&lt;'+escapeHtml(tag)+'&gt;'+(snipT?' &mdash; "'+escapeHtml(snipT)+'"':'')+'</div></div>'+
+               '<div class="a"><div class="lbl">After</div><div class="val">Removed from document</div></div></div>';
+      }
+      return '<section class="row"><header><span class="kind k-'+e.kind+'">'+kindLbl+'</span><span class="t">'+escapeHtml(time)+'</span><span class="p">'+path+'</span></header>'+diff+'</section>';
+    }).join('');
+
+    var startedAt = changeLog.length ? fmtTime(changeLog[0].t) : fmtTime(Date.now());
+    var endedAt = changeLog.length ? fmtTime(changeLog[changeLog.length-1].t) : '—';
+    var counts = { text:0, asset:0, delete:0 };
+    changeLog.forEach(function(e){ counts[e.kind]=(counts[e.kind]||0)+1; });
+
+    return '<!doctype html><html><head><meta charset="utf-8"><title>Change log — '+escapeHtml(state.fileName||'document')+'</title>'+
+      '<style>'+
+      '*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fafaf7;color:#1b1a18;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}'+
+      '.wrap{max-width:780px;margin:0 auto;padding:48px 44px 60px}'+
+      'header.doc{border-bottom:2px solid #1b1a18;padding-bottom:18px;margin-bottom:24px}'+
+      'header.doc h1{font-size:28px;letter-spacing:-.02em;margin:0 0 6px}'+
+      'header.doc .meta{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#666;letter-spacing:.04em;text-transform:uppercase}'+
+      '.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;padding:16px;background:#fff;border:1px solid #e4e2dd;border-radius:8px}'+
+      '.summary .cell .n{font-size:24px;font-weight:700;letter-spacing:-.02em}'+
+      '.summary .cell .l{font-family:ui-monospace,Menlo,monospace;font-size:9.5px;color:#666;text-transform:uppercase;letter-spacing:.08em;margin-top:2px}'+
+      '.row{padding:16px 0;border-bottom:1px solid #e4e2dd;break-inside:avoid;page-break-inside:avoid}'+
+      '.row header{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-family:ui-monospace,Menlo,monospace;font-size:11px}'+
+      '.kind{padding:2px 8px;border-radius:4px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:10px}'+
+      '.k-text{background:#e8f5b8;color:#3d4a00}.k-asset{background:#ffd9c5;color:#7a2a0c}.k-delete{background:#f0c4b8;color:#6b1b0a}'+
+      '.t{color:#888}.p{color:#444;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%}'+
+      '.diff{display:grid;grid-template-columns:1fr 1fr;gap:10px}'+
+      '.diff > div{padding:11px 13px;border-radius:6px;border:1px solid #e4e2dd;font-size:13.5px;line-height:1.55;word-break:break-word}'+
+      '.diff .b{background:#fdf2ec}.diff .a{background:#f5fde0}'+
+      '.diff .lbl{font-family:ui-monospace,Menlo,monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#888;margin-bottom:4px}'+
+      '@media print{.wrap{padding:24px}.row{padding:12px 0}}'+
+      '@page{margin:14mm}'+
+      '</style></head><body><div class="wrap">'+
+      '<header class="doc"><h1>Change log</h1><div class="meta">'+escapeHtml(state.fileName||'document')+' · session '+escapeHtml(startedAt)+' to '+escapeHtml(endedAt)+'</div></header>'+
+      '<div class="summary">'+
+        '<div class="cell"><div class="n">'+changeLog.length+'</div><div class="l">Total changes</div></div>'+
+        '<div class="cell"><div class="n">'+(counts.text||0)+'</div><div class="l">Text edits</div></div>'+
+        '<div class="cell"><div class="n">'+(counts.asset||0)+'</div><div class="l">Asset swaps</div></div>'+
+        '<div class="cell"><div class="n">'+(counts.delete||0)+'</div><div class="l">Deletions</div></div>'+
+      '</div>'+
+      (rows || '<div style="text-align:center;color:#888;padding:42px 0;font-family:ui-monospace,Menlo,monospace;font-size:12px">No changes recorded.</div>')+
+      '</div></body></html>';
+  }
+  function downloadLog(){
+    var html = buildLogHTML();
+    var base = (state.fileName||'document').replace(/\.html?$/i,'');
+    triggerDownload(new Blob([html],{type:'text/html'}), base+'-changelog.html');
+    showToast('✓ Downloaded change log — open and print to PDF for a sealed copy');
+  }
+
+  // ---- autosave ----
+  function setSaveState(s, txt){
+    saveInd.classList.remove('saving','saved','err');
+    if(s) saveInd.classList.add(s);
+    saveTxt.textContent = txt || s || '';
+  }
+  function scheduleSave(){
+    if(!state.doc) return;
+    clearTimeout(saveTimer);
+    setSaveState('saving','saving…');
+    saveTimer = setTimeout(performSave, SAVE_DEBOUNCE_MS);
+  }
+  function performSave(){
+    if(!state.doc) return;
+    var key = SAVE_KEY_PREFIX + state.fileName;
+    // serialize without preview/editor styles by working off the model doc
+    var docHTML = '<!DOCTYPE html>\n'+state.doc.documentElement.outerHTML;
+
+    // shrink asset snapshot: include binary data only when the cumulative budget is OK
+    var assets = [];
+    var totalBytes = 0;
+    state.assets.forEach(function(a){
+      var entry = { id:a.id, kind:a.kind, path:a.path, origSrc:a.origSrc, origSrcset:a.origSrcset||'', origHtml:a.origHtml||'',
+                    cur:{ src:a.cur.src, srcset:a.cur.srcset||'', html:a.cur.html||'', swapped:null } };
+      if(a.cur.swapped){
+        var sw = a.cur.swapped;
+        var approx = sw.dataURL ? Math.ceil(sw.dataURL.length * 0.75) : 0;
+        if(totalBytes + approx > BINARY_BUDGET_BYTES){
+          entry.cur.swapped = { name:sw.name, exportPath:sw.exportPath, inline:sw.inline||false, mime:sw.mime||'', _dropped:true };
+        } else {
+          totalBytes += approx;
+          entry.cur.swapped = JSON.parse(JSON.stringify(sw));
+        }
+      }
+      assets.push(entry);
+    });
+
+    var payload = {
+      v: 2,
+      savedAt: Date.now(),
+      fileName: state.fileName,
+      html: docHTML,
+      layers: state.layers.map(function(L){ return {id:L.id, tag:L.tag, path:L.path, text:L.text}; }),
+      assets: assets,
+      changeLog: changeLog,
+      baseUrl: state.baseUrl,
+      highlight: state.highlight,
+      interactive: state.interactive,
+      droppedBinaries: assets.some(function(a){ return a.cur.swapped && a.cur.swapped._dropped; })
+    };
+    try{
+      localStorage.setItem(key, JSON.stringify(payload));
+      lastSaveAt = Date.now();
+      var meta = payload.droppedBinaries ? 'saved (assets need re-upload on reload)' : 'all changes saved';
+      setSaveState('saved', meta);
+    } catch(err){
+      // quota probably; try once more without binaries
+      payload.assets.forEach(function(a){ if(a.cur.swapped){ delete a.cur.swapped.dataURL; a.cur.swapped._dropped=true; } });
+      payload.droppedBinaries = true;
+      try{
+        localStorage.setItem(key, JSON.stringify(payload));
+        setSaveState('saved','saved (binary assets skipped)');
+      } catch(err2){
+        setSaveState('err','save failed — storage full');
+      }
+    }
+  }
+  function loadSaved(name){
+    try{
+      var raw = localStorage.getItem(SAVE_KEY_PREFIX + name);
+      return raw ? JSON.parse(raw) : null;
+    }catch(_){ return null; }
+  }
+  function listSavedSessions(){
+    var out = [];
+    for(var i=0;i<localStorage.length;i++){
+      var k = localStorage.key(i);
+      if(k && k.indexOf(SAVE_KEY_PREFIX)===0){
+        try{
+          var v = JSON.parse(localStorage.getItem(k));
+          out.push({ key:k, fileName: v.fileName, savedAt:v.savedAt, count: (v.changeLog||[]).length });
+        }catch(_){}
+      }
+    }
+    out.sort(function(a,b){ return (b.savedAt||0) - (a.savedAt||0); });
+    return out;
+  }
+  function clearSave(name){
+    try{ localStorage.removeItem(SAVE_KEY_PREFIX + (name||state.fileName)); }catch(_){}
+  }
+  function relTime(t){
+    var s = Math.max(1, Math.round((Date.now()-t)/1000));
+    if(s<60) return s+'s ago';
+    if(s<3600) return Math.round(s/60)+'m ago';
+    if(s<86400) return Math.round(s/3600)+'h ago';
+    return Math.round(s/86400)+'d ago';
+  }
+  function offerRestore(){
+    var sessions = listSavedSessions();
+    if(!sessions.length) return;
+    var s = sessions[0];
+    restoreTtl.textContent = 'Unsaved session: ' + s.fileName;
+    restoreMeta.textContent = relTime(s.savedAt) + ' · ' + s.count + ' change' + (s.count===1?'':'s') + ' recorded';
+    restoreBanner.classList.remove('hidden');
+    restoreApply.onclick = function(){
+      restoreBanner.classList.add('hidden');
+      restoreFromSaved(s.fileName);
+    };
+    restoreDismiss.onclick = function(){
+      restoreBanner.classList.add('hidden');
+      clearSave(s.fileName);
+    };
+  }
+  function restoreFromSaved(name){
+    var p = loadSaved(name); if(!p) return;
+    loadHTMLFromString(p.html, name, { layerTexts: p.layers, assets: p.assets, changeLog: p.changeLog, baseUrl: p.baseUrl,
+                                       highlight: p.highlight, interactive: p.interactive });
+    if(p.droppedBinaries) showToast('⚠ Some swapped asset files were too large to save — re-upload to restore them');
+    else showToast('✓ Restored — '+(p.changeLog||[]).length+' change'+((p.changeLog||[]).length===1?'':'s')+' carried over');
+  }
+
+  // ---- selection + delete ----
+  function currentList(){ return state.tab==='text' ? state.layers : state.assets; }
+  function currentListEl(){ return state.tab==='text' ? layersEl : assetsEl; }
+  function updateSelBar(){
+    var n = selection.size;
+    if(n===0){ selBar.classList.remove('on'); return; }
+    selBar.classList.add('on');
+    selCount.textContent = n + ' selected';
+  }
+  function clearSelection(){ selection.clear(); refreshSelectionUI(); }
+  function refreshSelectionUI(){
+    currentListEl().querySelectorAll('.layer,.asset').forEach(function(r){
+      r.classList.toggle('selected', selection.has(r.dataset.id || r.dataset.aid));
+    });
+    updateSelBar();
+  }
+  function toggleSelect(id, additive){
+    if(!additive) selection.clear();
+    if(selection.has(id)) selection.delete(id); else selection.add(id);
+    refreshSelectionUI();
+  }
+  function selectAllVisible(){
+    selection.clear();
+    currentListEl().querySelectorAll('.layer,.asset').forEach(function(r){
+      var id = r.dataset.id || r.dataset.aid;
+      if(id) selection.add(id);
+    });
+    refreshSelectionUI();
+  }
+  function deleteSelected(){
+    if(!selection.size) return;
+    if(state.tab==='text') deleteLayers(Array.from(selection));
+    else deleteAssets(Array.from(selection));
+    clearSelection();
+  }
+  // capture restore info, remove, and record in undo + log
+  function deleteLayers(ids){
+    var deletions = [];
+    ids.forEach(function(id){
+      var L = findLayer(id); if(!L) return;
+      var mNode = state.doc && state.doc.querySelector('['+CMS_ATTR+'="'+id+'"]');
+      if(!mNode) return;
+      var parent = mNode.parentElement;
+      var nextSib = mNode.nextSibling;
+      var html = mNode.outerHTML;
+      var label = L.tag.toUpperCase();
+      var snippet1 = snippet(L.text||'');
+      // capture nested layer + asset ids inside this node so we can scrub them from state arrays
+      var nestedTextIds = Array.from(mNode.querySelectorAll('['+CMS_ATTR+']')).map(function(n){return n.getAttribute(CMS_ATTR);});
+      nestedTextIds.unshift(id);
+      var nestedAssetIds = Array.from(mNode.querySelectorAll('['+ASSET_ATTR+'],[data-ll-asset-poster]')).map(function(n){return n.getAttribute(ASSET_ATTR) || n.getAttribute('data-ll-asset-poster');});
+      deletions.push({ id:id, html:html, parentSelector: domLocator(parent), nextSibText: locatorSibling(nextSib),
+                       textIds:nestedTextIds, assetIds:nestedAssetIds, tag:label, text:snippet1 });
+      mNode.remove();
+      // mirror in preview
+      var pdoc = preview.contentDocument;
+      var pNode = pdoc && pdoc.querySelector('['+CMS_ATTR+'="'+id+'"]');
+      if(pNode) pNode.remove();
+    });
+    if(!deletions.length) return;
+    // scrub from state arrays
+    deletions.forEach(function(d){
+      state.layers = state.layers.filter(function(L){ return d.textIds.indexOf(L.id) === -1; });
+      state.assets = state.assets.filter(function(A){ return d.assetIds.indexOf(A.id) === -1; });
+    });
+    pushHistory({type:'delete', deletions:deletions, t:Date.now()});
+    deletions.forEach(function(d){
+      logChange({kind:'delete',path:'',before:{tag:d.tag,text:d.text,html:d.html},after:null});
+    });
+    renderLayers(searchEl.value.toLowerCase().trim());
+    renderAssets(searchEl.value.toLowerCase().trim());
+    updateDownloadLabel();
+    showToast('✓ Deleted '+deletions.length+' element'+(deletions.length===1?'':'s'));
+    scheduleSave();
+  }
+  function deleteAssets(ids){
+    // delete the actual asset element from doc (and preview), record similar to text deletions
+    var deletions = [];
+    ids.forEach(function(aid){
+      var A = findAsset(aid); if(!A) return;
+      var mNode = state.doc.querySelector('['+ASSET_ATTR+'="'+aid+'"]') || state.doc.querySelector('[data-ll-asset-poster="'+aid+'"]');
+      if(!mNode) return;
+      // for poster, we just remove the attribute rather than the parent <video>
+      if(A.kind==='poster'){
+        var poster = mNode.getAttribute('poster')||'';
+        mNode.removeAttribute('poster'); mNode.removeAttribute('data-ll-asset-poster');
+        deletions.push({ id:aid, kind:'poster', host:mNode, posterVal:poster, tag:'POSTER', text:baseName(poster), html:'' });
+        var pPoster = preview.contentDocument && preview.contentDocument.querySelector('[data-ll-asset-poster="'+aid+'"]');
+        if(pPoster){ pPoster.removeAttribute('poster'); }
+      } else {
+        var html = mNode.outerHTML;
+        deletions.push({ id:aid, kind:A.kind, html:html, parentSelector: domLocator(mNode.parentElement),
+                         nextSibText: locatorSibling(mNode.nextSibling), tag:A.kind.toUpperCase(), text: baseName(A.origSrc) });
+        mNode.remove();
+        var pn = preview.contentDocument && (preview.contentDocument.querySelector('['+ASSET_ATTR+'="'+aid+'"]') || preview.contentDocument.querySelector('[data-ll-asset-poster="'+aid+'"]'));
+        if(pn) pn.remove();
+      }
+      state.assets = state.assets.filter(function(X){ return X.id!==aid; });
+    });
+    if(!deletions.length) return;
+    pushHistory({type:'delete-asset', deletions:deletions, t:Date.now()});
+    deletions.forEach(function(d){
+      logChange({kind:'delete',path:'',before:{tag:d.tag,text:d.text,html:d.html},after:null});
+    });
+    renderAssets(searchEl.value.toLowerCase().trim());
+    updateDownloadLabel();
+    showToast('✓ Deleted '+deletions.length+' asset'+(deletions.length===1?'':'s'));
+    scheduleSave();
+  }
+  // primitive DOM locators good enough to find a parent after a delete (data-ll-id chain)
+  function domLocator(el){
+    if(!el || el.tagName==='HTML') return null;
+    if(el.tagName==='BODY') return {body:true};
+    var id = el.getAttribute && el.getAttribute(CMS_ATTR);
+    if(id) return {cms:id};
+    return { selector: cssPath(el) };
+  }
+  function cssPath(el){
+    var parts=[], cur=el;
+    while(cur && cur.nodeType===1 && cur.tagName!=='HTML'){
+      var seg=cur.tagName.toLowerCase();
+      var p=cur.parentElement;
+      if(p){
+        var idx = Array.prototype.indexOf.call(p.children, cur);
+        seg += ':nth-child('+(idx+1)+')';
+      }
+      parts.unshift(seg);
+      cur=cur.parentElement;
+    }
+    return parts.join(' > ');
+  }
+  function locatorSibling(sib){
+    while(sib && sib.nodeType!==1) sib=sib.nextSibling;
+    return sib ? cssPath(sib) : null;
+  }
+  function findParent(root, loc){
+    if(!loc) return null;
+    if(loc.body) return root.body;
+    if(loc.cms) return root.querySelector('['+CMS_ATTR+'="'+loc.cms+'"]');
+    if(loc.selector) try{ return root.querySelector(loc.selector); }catch(_){ return null; }
+    return null;
+  }
+
+  // ---- undo for deletes ----
+  function undoDelete(entry){
+    entry.deletions.slice().reverse().forEach(function(d){
+      var parent = findParent(state.doc, d.parentSelector);
+      var nextSib = d.nextSibText ? state.doc.querySelector(d.nextSibText) : null;
+      var frag = state.doc.createElement('div'); frag.innerHTML = d.html;
+      var node = frag.firstElementChild;
+      if(parent && node){ parent.insertBefore(node, nextSib || null); }
+      // mirror in preview
+      var pdoc = preview.contentDocument;
+      if(pdoc){
+        var pParent = findParent(pdoc, d.parentSelector);
+        var pNext = d.nextSibText ? pdoc.querySelector(d.nextSibText) : null;
+        var pFrag = pdoc.createElement('div'); pFrag.innerHTML = d.html;
+        var pNode = pFrag.firstElementChild;
+        if(pParent && pNode){ pParent.insertBefore(pNode, pNext || null); }
+      }
+    });
+    rebuildIndex();
+    renderLayers(searchEl.value.toLowerCase().trim());
+    renderAssets(searchEl.value.toLowerCase().trim());
+    updateDownloadLabel();
+    scheduleSave();
+  }
+  function undoDeleteAsset(entry){
+    entry.deletions.slice().reverse().forEach(function(d){
+      if(d.kind==='poster'){
+        // host was kept; re-set the poster attribute
+        var hostInModel = state.doc.querySelector('['+ASSET_ATTR+'="'+(d.id+'-host')+'"]') || d.host;
+        if(d.host) { d.host.setAttribute('poster', d.posterVal); d.host.setAttribute('data-ll-asset-poster', d.id); }
+        var pPoster = preview.contentDocument && (preview.contentDocument.querySelector('[data-ll-id]')); // best effort
+        return;
+      }
+      var parent = findParent(state.doc, d.parentSelector);
+      var nextSib = d.nextSibText ? state.doc.querySelector(d.nextSibText) : null;
+      var frag = state.doc.createElement('div'); frag.innerHTML = d.html;
+      var node = frag.firstElementChild;
+      if(parent && node){ parent.insertBefore(node, nextSib || null); }
+      var pdoc = preview.contentDocument;
+      if(pdoc){
+        var pParent = findParent(pdoc, d.parentSelector);
+        var pNext = d.nextSibText ? pdoc.querySelector(d.nextSibText) : null;
+        var pFrag = pdoc.createElement('div'); pFrag.innerHTML = d.html;
+        var pNode = pFrag.firstElementChild;
+        if(pParent && pNode){ pParent.insertBefore(pNode, pNext || null); }
+      }
+    });
+    rebuildIndex();
+    renderAssets(searchEl.value.toLowerCase().trim());
+    updateDownloadLabel();
+    scheduleSave();
+  }
+  // re-derive layers/assets arrays from the (mutated) model — used after restoring deletes
+  function rebuildIndex(){
+    var byId = {};
+    state.layers.forEach(function(L){ byId[L.id]=L; });
+    var assetById = {};
+    state.assets.forEach(function(A){ assetById[A.id]=A; });
+    var seenL = {}, seenA = {};
+    state.doc.querySelectorAll('['+CMS_ATTR+']').forEach(function(n){
+      var id = n.getAttribute(CMS_ATTR);
+      seenL[id]=true;
+      if(!byId[id]){
+        var L = { id:id, tag:n.tagName.toLowerCase(), path:buildPath(n), text:n.textContent };
+        state.layers.push(L); byId[id]=L;
+      } else { byId[id].text = n.textContent; }
+    });
+    state.layers = state.layers.filter(function(L){ return seenL[L.id]; });
+    state.doc.querySelectorAll('['+ASSET_ATTR+']').forEach(function(n){
+      var id = n.getAttribute(ASSET_ATTR); seenA[id]=true;
+      if(!assetById[id]){
+        var kind = n.tagName.toLowerCase();
+        if(kind==='source') kind='source';
+        var rec = { id:id, kind:kind, path:buildPath(n), origSrc:n.getAttribute('src')||'',
+                    cur:{ src:n.getAttribute('src')||'', srcset:n.getAttribute('srcset')||'', html: kind==='svg'? n.outerHTML : '', swapped:null } };
+        state.assets.push(rec); assetById[id]=rec;
+      }
+    });
+    state.doc.querySelectorAll('[data-ll-asset-poster]').forEach(function(n){
+      var id = n.getAttribute('data-ll-asset-poster'); seenA[id]=true;
+    });
+    state.assets = state.assets.filter(function(A){ return seenA[A.id]; });
+  }
 
   // ---- core: load an html string (parse the model, then render) ----
   function loadHTML(htmlString, name){
@@ -458,6 +1109,7 @@
     state.doc = doc;
     state.exportVersion = 0;
     resetHistory();
+    changeLog = [];
 
     renderPreview();
 
@@ -468,11 +1120,47 @@
     fileMeta.classList.remove('hidden');
     newBtn.classList.remove('hidden');
     searchEl.classList.remove('hidden');
+    logBtn.classList.remove('hidden');
+    saveInd.classList.remove('hidden');
+    setSaveState('saved','idle');
+    updateLogBadge();
     fileName.textContent = state.fileName;
     downloadBtn.disabled = false;
     renderLayers();
     renderAssets();
     updateDownloadLabel();
+    // initial save baseline
+    scheduleSave();
+  }
+
+  // alternate entry point used by restore-from-storage: applies saved layer text, asset state, and log
+  function loadHTMLFromString(htmlString, name, restore){
+    loadHTML(htmlString, name);
+    if(restore){
+      if(Array.isArray(restore.layerTexts)){
+        restore.layerTexts.forEach(function(saved){
+          var L = findLayer(saved.id); if(!L) return;
+          if(L.text !== saved.text) applyText(saved.id, saved.text);
+        });
+      }
+      if(Array.isArray(restore.assets)){
+        restore.assets.forEach(function(saved){
+          var rec = findAsset(saved.id); if(!rec) return;
+          if(saved.origHtml) rec.origHtml = saved.origHtml;
+          if(saved.origSrcset) rec.origSrcset = saved.origSrcset;
+          if(saved.cur && saved.cur.swapped && !saved.cur.swapped._dropped){
+            applyAssetState(rec, saved.cur);
+          }
+        });
+      }
+      if(typeof restore.baseUrl === 'string' && restore.baseUrl){ state.baseUrl = restore.baseUrl; baseUrlEl.value = restore.baseUrl.replace(/\/$/,''); }
+      if(typeof restore.highlight === 'boolean'){ state.highlight = restore.highlight; hlToggle.classList.toggle('on', state.highlight); }
+      if(typeof restore.interactive === 'boolean'){ state.interactive = restore.interactive; interactiveToggle.classList.toggle('on', state.interactive); renderPreview(); }
+      if(Array.isArray(restore.changeLog)){ changeLog = restore.changeLog.slice(); updateLogBadge(); }
+      // restoring doesn't add to undo history — the undo stack from the previous session is discarded
+      resetHistory();
+      scheduleSave();
+    }
   }
 
   // ---- (re)build the preview iframe from the current model + mode flags ----
@@ -675,6 +1363,10 @@
         var after = { src:'', srcset:'', html:html, swapped:{ name:file.name, dataURL:'', exportPath:'', inline:true } };
         applyAssetState(rec, after);
         pushHistory({type:'asset', assetId:rec.id, label:'icon swap', before:before, after:after});
+        logChange({kind:'asset',assetId:rec.id,path:rec.path,
+          before:{label:baseName(rec.origSrc)||'inline svg', src:rec.origSrc},
+          after:{label:file.name+' (inlined)', swapped:after.swapped}});
+        scheduleSave();
         showToast('✓ Icon replaced — inline SVG updated');
       };
       r.readAsText(file);
@@ -694,6 +1386,13 @@
       };
       applyAssetState(rec, after);
       pushHistory({type:'asset', assetId:rec.id, label:(rec.kind==='video'||rec.kind==='source'||rec.kind==='audio'?'media swap':'image swap'), before:before, after:after});
+      var beforeLabel = baseName(rec.origSrc) || '(unset)';
+      var afterLabel = exportPath;
+      var thumbForLog = (rec.kind==='img' || rec.kind==='poster') && /^data:image/.test(dataURL) ? dataURL : '';
+      logChange({kind:'asset',assetId:rec.id,path:rec.path,
+        before:{ label:beforeLabel, src:rec.origSrc },
+        after:{ label:afterLabel, swapped:{name:file.name, exportPath:exportPath}, thumbDataURL:thumbForLog }});
+      scheduleSave();
       showToast('✓ Replaced — will export to '+exportPath);
     };
     reader.readAsDataURL(file);
@@ -710,6 +1409,10 @@
     }
     applyAssetState(rec, after);
     pushHistory({type:'asset', assetId:rec.id, label:'revert to original', before:before, after:after});
+    logChange({kind:'asset',assetId:rec.id,path:rec.path,
+      before:{label: before.swapped ? (before.swapped.exportPath||before.swapped.name) : baseName(rec.origSrc)},
+      after:{label:'(reverted to original)'}});
+    scheduleSave();
     showToast('✓ Reverted to original');
   }
 
@@ -721,13 +1424,17 @@
       if(filter && L.text.toLowerCase().indexOf(filter)<0 && L.path.toLowerCase().indexOf(filter)<0) return;
       shown++;
       var row=document.createElement('div'); row.className='layer'; row.dataset.id=L.id;
+      if(selection.has(L.id)) row.classList.add('selected');
       var top=document.createElement('div'); top.className='layer-top';
+      var check=document.createElement('div'); check.className='check'; check.title='Select for delete (Shift-click to multi-select)';
       var pill=document.createElement('span'); pill.className='pill'; pill.textContent=L.tag;
       var path=document.createElement('span'); path.className='path'; path.textContent=L.path||'body';
-      top.appendChild(pill); top.appendChild(path);
+      top.appendChild(check); top.appendChild(pill); top.appendChild(path);
       var ta=document.createElement('textarea'); ta.value=L.text; ta.dataset.for=L.id; ta.rows=1;
       row.appendChild(top); row.appendChild(ta); layersEl.appendChild(row);
       autosize(ta);
+
+      check.addEventListener('click', function(e){ e.stopPropagation(); toggleSelect(L.id, true); });
 
       ta.addEventListener('input', function(){
         autosize(ta);
@@ -742,7 +1449,12 @@
       });
       ta.addEventListener('focus', function(){ markActive(L.id, true); });
       ta.addEventListener('blur', function(){ closeCoalescing(); clearSpotlight(); });
-      row.addEventListener('click', function(e){ if(e.target!==ta){ ta.focus(); scrollToNode(L.id);} });
+      row.addEventListener('click', function(e){
+        if(e.target===ta || e.target===check) return;
+        if(e.shiftKey || e.metaKey || e.ctrlKey){ toggleSelect(L.id, true); return; }
+        if(selection.size){ selection.clear(); refreshSelectionUI(); }
+        ta.focus(); scrollToNode(L.id);
+      });
     });
     fieldCount.textContent=shown;
     tabTextN.textContent=shown;
@@ -765,6 +1477,11 @@
       shown++;
 
       var row=document.createElement('div'); row.className='asset'; row.dataset.aid=rec.id;
+      if(selection.has(rec.id)) row.classList.add('selected');
+
+      var check=document.createElement('div'); check.className='check'; check.title='Select for delete (Shift-click to multi-select)';
+      check.style.marginTop='4px';
+      row.appendChild(check);
 
       var thumb=document.createElement('div'); thumb.className='thumb';
       if(rec.kind==='svg'){
@@ -813,7 +1530,13 @@
       row.appendChild(thumb); row.appendChild(info);
       assetsEl.appendChild(row);
 
-      row.addEventListener('click', function(){ markAssetActive(rec.id, true); });
+      row.addEventListener('click', function(e){
+        if(e.target===check) return;
+        if(e.shiftKey || e.metaKey || e.ctrlKey){ toggleSelect(rec.id, true); return; }
+        if(selection.size){ selection.clear(); refreshSelectionUI(); }
+        markAssetActive(rec.id, true);
+      });
+      check.addEventListener('click', function(e){ e.stopPropagation(); toggleSelect(rec.id, true); });
 
       // drag a file straight onto the row to replace
       ['dragenter','dragover'].forEach(function(ev){
@@ -830,7 +1553,6 @@
     assetCount.textContent=state.assets.length;
     tabAssetsN.textContent=shown;
   }
-  function escapeHtml(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 
   function autosize(ta){ ta.style.height='auto'; ta.style.height=(ta.scrollHeight)+'px'; }
 
@@ -978,6 +1700,19 @@
     var files = swappedFileAssets();
 
     if(!files.length){
+      // even without asset swaps, bundle the change log if there were any text/delete edits
+      if(changeLog.length && typeof JSZip !== 'undefined'){
+        var zipN = new JSZip();
+        zipN.file(htmlName, out);
+        var logName = htmlName.replace(/\.html?$/i,'') + '-changelog.html';
+        zipN.file(logName, buildLogHTML());
+        var zipOnlyName = htmlName.replace(/\.html?$/i,'') + '-edited.zip';
+        zipN.generateAsync({type:'blob'}).then(function(blob){
+          triggerDownload(blob, zipOnlyName);
+          showToast('✓ Exported '+zipOnlyName+' — HTML + change log');
+        });
+        return;
+      }
       triggerDownload(new Blob([out],{type:'text/html'}), htmlName);
       showToast('✓ Exported '+htmlName);
       return;
@@ -990,10 +1725,15 @@
         var b64 = (rec.cur.swapped.dataURL.split(',')[1]) || '';
         zip.file(rec.cur.swapped.exportPath, b64, {base64:true});
       });
+      if(changeLog.length){
+        var logName = htmlName.replace(/\.html?$/i,'') + '-changelog.html';
+        zip.file(logName, buildLogHTML());
+      }
       var zipName = htmlName.replace(/\.html?$/i,'') + '-edited.zip';
       zip.generateAsync({type:'blob'}).then(function(blob){
         triggerDownload(blob, zipName);
-        showToast('✓ Exported '+zipName+' — HTML + '+files.length+' asset file'+(files.length>1?'s':''));
+        var extra = changeLog.length ? ' + change log' : '';
+        showToast('✓ Exported '+zipName+' — HTML + '+files.length+' asset file'+(files.length>1?'s':'')+extra);
       });
     } else {
       // offline fallback: html + each asset as its own download
@@ -1003,6 +1743,7 @@
           triggerDownload(blob, baseName(rec.cur.swapped.exportPath));
         });
       });
+      if(changeLog.length) triggerDownload(new Blob([buildLogHTML()],{type:'text/html'}), htmlName.replace(/\.html?$/i,'') + '-changelog.html');
       showToast('⚠ ZIP library offline — downloaded files individually; place them at the paths shown in the Assets panel');
     }
   }
@@ -1010,6 +1751,8 @@
   // ---- tabs ----
   function switchTab(which){
     state.tab = which;
+    if(selection.size) selection.clear();
+    updateSelBar();
     tabText.classList.toggle('active', which==='text');
     tabAssets.classList.toggle('active', which==='assets');
     layersEl.classList.toggle('hidden', which!=='text');
@@ -1059,18 +1802,24 @@
   undoBtn.addEventListener('click', undo);
   redoBtn.addEventListener('click', redo);
   newBtn.addEventListener('click', function(){
+    // wipe both in-memory state and the persisted session for the file being closed
+    clearSave(state.fileName);
     state={doc:null,fileName:'',highlight:true,interactive:true,baseUrl:'',exportVersion:0,layers:[],assets:[],tab:'text'};
     resetHistory();
+    changeLog = [];
+    selection.clear(); updateSelBar();
     interactiveToggle.classList.add('on');
     baseUrlEl.value=''; modeHint.textContent='Live mode: click components to interact · double-click text to edit';
     preview.srcdoc=''; frameWrap.classList.add('hidden'); stageBar.classList.add('hidden');
     dropzone.classList.remove('hidden'); fileMeta.classList.add('hidden'); newBtn.classList.add('hidden');
     searchEl.classList.add('hidden'); searchEl.value=''; downloadBtn.disabled=true;
+    logBtn.classList.add('hidden'); saveInd.classList.add('hidden');
     fieldCount.textContent='0'; assetCount.textContent='0'; tabTextN.textContent='0'; tabAssetsN.textContent='0';
     layersEl.innerHTML='<div class="empty-side">No file loaded yet.<br/>Drop an HTML file to detect editable text.</div>';
     assetsEl.innerHTML='<div class="empty-side">No file loaded yet.<br/>Images, icons &amp; video appear here.</div>';
     switchTab('text');
     updateDownloadLabel();
+    offerRestore();
   });
   searchEl.addEventListener('input', function(){
     var f=searchEl.value.toLowerCase().trim();
@@ -1081,6 +1830,7 @@
     hlToggle.classList.toggle('on', state.highlight);
     var pdoc=preview.contentDocument;
     if(pdoc && pdoc.body) pdoc.body.classList.toggle('ll-hl', state.highlight);
+    scheduleSave();
   });
   interactiveToggle.addEventListener('click', function(){
     state.interactive=!state.interactive;
@@ -1089,6 +1839,7 @@
       ? 'Live mode: click components to interact · double-click text to edit'
       : 'Click any text to edit.';
     renderPreview();
+    scheduleSave();
     showToast(state.interactive ? 'Interactive preview on' : 'Interactive preview off');
   });
   var baseTimer;
@@ -1098,21 +1849,58 @@
       var v=baseUrlEl.value.trim();
       state.baseUrl = v && !/\/$/.test(v) ? v+'/' : v;
       renderPreview();
+      scheduleSave();
     }, 600);
+  });
+
+  // ---- selection bar + log modal + delete ----
+  selClear.addEventListener('click', clearSelection);
+  selDelete.addEventListener('click', deleteSelected);
+  logBtn.addEventListener('click', openLog);
+  logClose.addEventListener('click', closeLog);
+  logModal.addEventListener('click', function(e){ if(e.target===logModal) closeLog(); });
+  logDownload.addEventListener('click', downloadLog);
+  logClear.addEventListener('click', function(){
+    if(!changeLog.length) return;
+    if(!confirm('Clear the change log? The history of edits will be removed (your edits stay).')) return;
+    changeLog = [];
+    updateLogBadge(); renderLog(); scheduleSave();
+    showToast('Change log cleared');
   });
 
   // ---- keyboard: undo/redo + export (works in main doc and inside preview iframe) ----
   function hotkeys(e){
     var mod = e.metaKey || e.ctrlKey;
-    if(!mod) return;
     var k = e.key.toLowerCase();
+    // Delete / Backspace removes selected layers (only when no input/textarea has focus)
+    if((k==='delete' || k==='backspace') && !mod){
+      var t = (e.target && e.target.tagName) || '';
+      if(t==='TEXTAREA' || t==='INPUT') return;
+      if(selection.size){ e.preventDefault(); deleteSelected(); return; }
+    }
+    if(k==='escape' && selection.size){ e.preventDefault(); clearSelection(); return; }
+    if(!mod) return;
     if(k==='s'){ e.preventDefault(); if(!downloadBtn.disabled) downloadExport(); return; }
     if(k==='z'){ e.preventDefault(); if(e.shiftKey) redo(); else undo(); return; }
     if(k==='y'){ e.preventDefault(); redo(); return; }
+    if(k==='a' && state.doc){
+      // only when focus is on the sidebar lists, not in a textarea
+      var t2 = (e.target && e.target.tagName) || '';
+      if(t2==='TEXTAREA' || t2==='INPUT') return;
+      e.preventDefault(); selectAllVisible();
+    }
   }
   document.addEventListener('keydown', hotkeys, true);
 
+  // ---- persistence triggers ----
+  document.addEventListener('visibilitychange', function(){ if(document.hidden) performSave(); });
+  window.addEventListener('beforeunload', function(){ if(state.doc) performSave(); });
+
   updateHistoryUI();
+  updateSelBar();
+
+  // ---- offer to restore unsaved session on app open ----
+  offerRestore();
 })();
 </script>
 </body>
