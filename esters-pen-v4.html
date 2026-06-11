@@ -130,6 +130,34 @@
   .asset.selected .check{border-color:var(--warn);background:var(--warn)}
   .asset.selected .check::after{background:#0d0c0b}
 
+  /* ---------- Drag-to-reorder ---------- */
+  .layer, .asset{ position:relative; }
+  .grip{
+    width:14px;flex:none;align-self:stretch;cursor:grab;display:grid;place-items:center;
+    color:var(--ink-faint);font-family:var(--mono);font-size:12px;line-height:1;letter-spacing:-1px;
+    user-select:none;opacity:.45;transition:.12s;
+  }
+  .layer:hover .grip, .asset:hover .grip, .layer.selected .grip, .asset.selected .grip{opacity:.95}
+  .grip:active{cursor:grabbing}
+  .grip::before{content:"⋮⋮";display:block;transform:rotate(0deg)}
+  .layer.dragging, .asset.dragging{opacity:.35}
+  .layer.drop-above::before, .asset.drop-above::before,
+  .layer.drop-below::after,  .asset.drop-below::after{
+    content:"";position:absolute;left:6px;right:6px;height:2px;border-radius:2px;background:var(--acid);
+    box-shadow:0 0 8px var(--acid);
+  }
+  .asset.drop-above::before, .asset.drop-below::after{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+  .layer.drop-above::before, .asset.drop-above::before{top:-3px}
+  .layer.drop-below::after,  .asset.drop-below::after{bottom:-3px}
+  .layer.drop-invalid::before, .asset.drop-invalid::before{
+    content:"";position:absolute;inset:0;border-radius:9px;border:1.5px dashed var(--warn);pointer-events:none;
+  }
+  .reorder-hint{
+    padding:7px 10px;margin:2px 8px 0;font-family:var(--mono);font-size:10px;color:var(--ink-faint);
+    letter-spacing:.04em;line-height:1.5;display:none;
+  }
+  .reorder-hint.on{display:block}
+
   /* ---------- Changelog modal ---------- */
   .modal-mask{
     position:fixed;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(4px);
@@ -475,6 +503,7 @@
     else if(e.type==='asset'){ var rec = findAsset(e.assetId); if(rec){ applyAssetState(rec, e.before); markAssetActive(e.assetId, true); } showToast('↶ Undid '+e.label); }
     else if(e.type==='delete'){ undoDelete(e); showToast('↶ Undid delete ('+e.deletions.length+')'); }
     else if(e.type==='delete-asset'){ undoDeleteAsset(e); showToast('↶ Undid asset delete ('+e.deletions.length+')'); }
+    else if(e.type==='reorder'){ applyReorder(e, 'backward'); showToast('↶ Undid reorder'); }
     updateHistoryUI();
     scheduleSave();
   }
@@ -494,6 +523,7 @@
       selection = new Set(aids); deleteAssets(aids); clearSelection();
       showToast('↷ Redid asset delete ('+e.deletions.length+')');
     }
+    else if(e.type==='reorder'){ applyReorder(e, 'forward'); showToast('↷ Redid reorder'); }
     updateHistoryUI();
     scheduleSave();
   }
@@ -586,15 +616,15 @@
   function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function renderLog(){
     if(!changeLog.length){
-      logBody.innerHTML='<div class="empty-log">No changes yet.<br/>Edit text, swap an asset, or delete a layer to start logging.</div>';
+      logBody.innerHTML='<div class="empty-log">No changes yet.<br/>Edit text, swap an asset, reorder, or delete a layer to start logging.</div>';
       return;
     }
     var html='';
     // newest first
     for(var i=changeLog.length-1;i>=0;i--){
       var e=changeLog[i];
-      var kindLbl = e.kind==='text' ? 'text edit' : (e.kind==='asset' ? 'asset swap' : 'delete');
-      var kindCls = e.kind==='text' ? '' : (e.kind==='asset' ? 'asset' : 'delete');
+      var kindLbl = e.kind==='text' ? 'text edit' : (e.kind==='asset' ? 'asset swap' : (e.kind==='reorder' ? 'reorder' : 'delete'));
+      var kindCls = e.kind==='text' ? '' : (e.kind==='asset' ? 'asset' : (e.kind==='reorder' ? '' : 'delete'));
       html += '<div class="log-item">'+
         '<div class="log-head">'+
           '<span class="log-kind '+kindCls+'">'+kindLbl+'</span>'+
@@ -625,6 +655,13 @@
         '<div class="a"><span class="lbl">After</span>'+escapeHtml(aShow)+aImg+'</div>'+
       '</div>';
     }
+    if(e.kind==='reorder'){
+      var rb = e.before||{}, ra = e.after||{};
+      return '<div class="diff">'+
+        '<div class="b"><span class="lbl">Was</span>'+escapeHtml(rb.label||'')+'</div>'+
+        '<div class="a"><span class="lbl">Now</span>'+escapeHtml(ra.label||'')+(ra.tag?' &lt;'+escapeHtml(ra.tag)+'&gt;':'')+'</div>'+
+      '</div>';
+    }
     // delete
     return '<div class="diff">'+
       '<div class="b"><span class="lbl">Removed element</span>'+escapeHtml(e.before&&e.before.tag||'')+(e.before&&e.before.text?'<div style="margin-top:4px;color:var(--ink-dim);font-size:12px">"'+escapeHtml(snippet(e.before.text))+'"</div>':'')+'</div>'+
@@ -638,7 +675,7 @@
   function buildLogHTML(){
     var rows = changeLog.map(function(e){
       var time = fmtTime(e.t);
-      var kindLbl = e.kind==='text' ? 'Text edit' : (e.kind==='asset' ? 'Asset swap' : 'Delete');
+      var kindLbl = e.kind==='text' ? 'Text edit' : (e.kind==='asset' ? 'Asset swap' : (e.kind==='reorder' ? 'Reorder' : 'Delete'));
       var path = escapeHtml(e.path||'');
       var diff = '';
       if(e.kind==='text'){
@@ -650,6 +687,10 @@
         var aShow = a.label || (a.swapped && a.swapped.exportPath) || (a.swapped && a.swapped.name) || '(reverted to original)';
         diff = '<div class="diff"><div class="b"><div class="lbl">Before</div><div class="val">'+escapeHtml(bShow)+'</div></div>'+
                '<div class="a"><div class="lbl">After</div><div class="val">'+escapeHtml(aShow)+'</div></div></div>';
+      } else if(e.kind==='reorder'){
+        var rb = e.before || {}, ra = e.after || {};
+        diff = '<div class="diff"><div class="b"><div class="lbl">Was</div><div class="val">'+escapeHtml(rb.label||'')+'</div></div>'+
+               '<div class="a"><div class="lbl">Now</div><div class="val">'+escapeHtml(ra.label||'')+(ra.tag?' &lt;'+escapeHtml(ra.tag)+'&gt;':'')+'</div></div></div>';
       } else {
         var tag = e.before && e.before.tag || '';
         var snipT = e.before && e.before.text ? snippet(e.before.text) : '';
@@ -677,7 +718,7 @@
       '.row{padding:16px 0;border-bottom:1px solid #e4e2dd;break-inside:avoid;page-break-inside:avoid}'+
       '.row header{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-family:ui-monospace,Menlo,monospace;font-size:11px}'+
       '.kind{padding:2px 8px;border-radius:4px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:10px}'+
-      '.k-text{background:#e8f5b8;color:#3d4a00}.k-asset{background:#ffd9c5;color:#7a2a0c}.k-delete{background:#f0c4b8;color:#6b1b0a}'+
+      '.k-text{background:#e8f5b8;color:#3d4a00}.k-asset{background:#ffd9c5;color:#7a2a0c}.k-delete{background:#f0c4b8;color:#6b1b0a}.k-reorder{background:#dde9ff;color:#1a3878}'+
       '.t{color:#888}.p{color:#444;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%}'+
       '.diff{display:grid;grid-template-columns:1fr 1fr;gap:10px}'+
       '.diff > div{padding:11px 13px;border-radius:6px;border:1px solid #e4e2dd;font-size:13.5px;line-height:1.55;word-break:break-word}'+
@@ -859,87 +900,23 @@
     else deleteAssets(Array.from(selection));
     clearSelection();
   }
-  // capture restore info, remove, and record in undo + log
-  function deleteLayers(ids){
-    var deletions = [];
-    ids.forEach(function(id){
-      var L = findLayer(id); if(!L) return;
-      var mNode = state.doc && state.doc.querySelector('['+CMS_ATTR+'="'+id+'"]');
-      if(!mNode) return;
-      var parent = mNode.parentElement;
-      var nextSib = mNode.nextSibling;
-      var html = mNode.outerHTML;
-      var label = L.tag.toUpperCase();
-      var snippet1 = snippet(L.text||'');
-      // capture nested layer + asset ids inside this node so we can scrub them from state arrays
-      var nestedTextIds = Array.from(mNode.querySelectorAll('['+CMS_ATTR+']')).map(function(n){return n.getAttribute(CMS_ATTR);});
-      nestedTextIds.unshift(id);
-      var nestedAssetIds = Array.from(mNode.querySelectorAll('['+ASSET_ATTR+'],[data-ll-asset-poster]')).map(function(n){return n.getAttribute(ASSET_ATTR) || n.getAttribute('data-ll-asset-poster');});
-      deletions.push({ id:id, html:html, parentSelector: domLocator(parent), nextSibText: locatorSibling(nextSib),
-                       textIds:nestedTextIds, assetIds:nestedAssetIds, tag:label, text:snippet1 });
-      mNode.remove();
-      // mirror in preview
-      var pdoc = preview.contentDocument;
-      var pNode = pdoc && pdoc.querySelector('['+CMS_ATTR+'="'+id+'"]');
-      if(pNode) pNode.remove();
+  // sort an id list by current document position (ascending)
+  function sortByDocOrder(ids, attr){
+    var posOf = {};
+    var i = 0;
+    state.doc.querySelectorAll('['+attr+']').forEach(function(n){
+      posOf[n.getAttribute(attr)] = i++;
     });
-    if(!deletions.length) return;
-    // scrub from state arrays
-    deletions.forEach(function(d){
-      state.layers = state.layers.filter(function(L){ return d.textIds.indexOf(L.id) === -1; });
-      state.assets = state.assets.filter(function(A){ return d.assetIds.indexOf(A.id) === -1; });
-    });
-    pushHistory({type:'delete', deletions:deletions, t:Date.now()});
-    deletions.forEach(function(d){
-      logChange({kind:'delete',path:'',before:{tag:d.tag,text:d.text,html:d.html},after:null});
-    });
-    renderLayers(searchEl.value.toLowerCase().trim());
-    renderAssets(searchEl.value.toLowerCase().trim());
-    updateDownloadLabel();
-    showToast('✓ Deleted '+deletions.length+' element'+(deletions.length===1?'':'s'));
-    scheduleSave();
+    return ids.slice().sort(function(a,b){ return (posOf[a]||0) - (posOf[b]||0); });
   }
-  function deleteAssets(ids){
-    // delete the actual asset element from doc (and preview), record similar to text deletions
-    var deletions = [];
-    ids.forEach(function(aid){
-      var A = findAsset(aid); if(!A) return;
-      var mNode = state.doc.querySelector('['+ASSET_ATTR+'="'+aid+'"]') || state.doc.querySelector('[data-ll-asset-poster="'+aid+'"]');
-      if(!mNode) return;
-      // for poster, we just remove the attribute rather than the parent <video>
-      if(A.kind==='poster'){
-        var poster = mNode.getAttribute('poster')||'';
-        mNode.removeAttribute('poster'); mNode.removeAttribute('data-ll-asset-poster');
-        deletions.push({ id:aid, kind:'poster', host:mNode, posterVal:poster, tag:'POSTER', text:baseName(poster), html:'' });
-        var pPoster = preview.contentDocument && preview.contentDocument.querySelector('[data-ll-asset-poster="'+aid+'"]');
-        if(pPoster){ pPoster.removeAttribute('poster'); }
-      } else {
-        var html = mNode.outerHTML;
-        deletions.push({ id:aid, kind:A.kind, html:html, parentSelector: domLocator(mNode.parentElement),
-                         nextSibText: locatorSibling(mNode.nextSibling), tag:A.kind.toUpperCase(), text: baseName(A.origSrc) });
-        mNode.remove();
-        var pn = preview.contentDocument && (preview.contentDocument.querySelector('['+ASSET_ATTR+'="'+aid+'"]') || preview.contentDocument.querySelector('[data-ll-asset-poster="'+aid+'"]'));
-        if(pn) pn.remove();
-      }
-      state.assets = state.assets.filter(function(X){ return X.id!==aid; });
-    });
-    if(!deletions.length) return;
-    pushHistory({type:'delete-asset', deletions:deletions, t:Date.now()});
-    deletions.forEach(function(d){
-      logChange({kind:'delete',path:'',before:{tag:d.tag,text:d.text,html:d.html},after:null});
-    });
-    renderAssets(searchEl.value.toLowerCase().trim());
-    updateDownloadLabel();
-    showToast('✓ Deleted '+deletions.length+' asset'+(deletions.length===1?'':'s'));
-    scheduleSave();
-  }
-  // primitive DOM locators good enough to find a parent after a delete (data-ll-id chain)
-  function domLocator(el){
-    if(!el || el.tagName==='HTML') return null;
-    if(el.tagName==='BODY') return {body:true};
-    var id = el.getAttribute && el.getAttribute(CMS_ATTR);
-    if(id) return {cms:id};
-    return { selector: cssPath(el) };
+  // a stable locator for a parent element so we can find it again later
+  function parentLocator(el){
+    if(!el || !el.tagName) return null;
+    if(el.tagName === 'BODY') return {body:true};
+    if(el.getAttribute && el.getAttribute(CMS_ATTR)) return {cms: el.getAttribute(CMS_ATTR)};
+    if(el.getAttribute && el.getAttribute(ASSET_ATTR)) return {asset: el.getAttribute(ASSET_ATTR)};
+    if(el.id) return {id: el.id};
+    return {path: cssPath(el)};
   }
   function cssPath(el){
     var parts=[], cur=el;
@@ -955,66 +932,312 @@
     }
     return parts.join(' > ');
   }
-  function locatorSibling(sib){
-    while(sib && sib.nodeType!==1) sib=sib.nextSibling;
-    return sib ? cssPath(sib) : null;
-  }
   function findParent(root, loc){
     if(!loc) return null;
     if(loc.body) return root.body;
     if(loc.cms) return root.querySelector('['+CMS_ATTR+'="'+loc.cms+'"]');
-    if(loc.selector) try{ return root.querySelector(loc.selector); }catch(_){ return null; }
+    if(loc.asset) return root.querySelector('['+ASSET_ATTR+'="'+loc.asset+'"]');
+    if(loc.id) return root.getElementById ? root.getElementById(loc.id) : root.querySelector('#'+loc.id);
+    if(loc.path) try{ return root.querySelector(loc.path); }catch(_){ return null; }
     return null;
   }
-
-  // ---- undo for deletes ----
-  function undoDelete(entry){
-    entry.deletions.slice().reverse().forEach(function(d){
-      var parent = findParent(state.doc, d.parentSelector);
-      var nextSib = d.nextSibText ? state.doc.querySelector(d.nextSibText) : null;
-      var frag = state.doc.createElement('div'); frag.innerHTML = d.html;
-      var node = frag.firstElementChild;
-      if(parent && node){ parent.insertBefore(node, nextSib || null); }
-      // mirror in preview
+  // resync state.layers / state.assets order with the live document order
+  function resortByDoc(){
+    var ti = {}, ai = {}; var i = 0;
+    state.doc.querySelectorAll('['+CMS_ATTR+']').forEach(function(n){ ti[n.getAttribute(CMS_ATTR)] = i++; });
+    state.layers.sort(function(a,b){ return (ti[a.id]==null?1e9:ti[a.id]) - (ti[b.id]==null?1e9:ti[b.id]); });
+    i = 0;
+    state.doc.querySelectorAll('['+ASSET_ATTR+'],[data-ll-asset-poster]').forEach(function(n){
+      var k = n.getAttribute(ASSET_ATTR) || n.getAttribute('data-ll-asset-poster');
+      if(k != null) ai[k] = i++;
+    });
+    state.assets.sort(function(a,b){ return (ai[a.id]==null?1e9:ai[a.id]) - (ai[b.id]==null?1e9:ai[b.id]); });
+  }
+  // capture restore info, remove, and record in undo + log
+  function deleteLayers(ids){
+    // STEP 1 — snapshot every target's original parent + index BEFORE deleting anything.
+    // Skip any id that's contained inside another selected id (the outer one will restore it).
+    var nodeFor = {};
+    ids.forEach(function(id){ nodeFor[id] = state.doc && state.doc.querySelector('['+CMS_ATTR+'="'+id+'"]'); });
+    var snapshots = [];
+    ids.forEach(function(id){
+      var mNode = nodeFor[id]; if(!mNode) return;
+      var containedByOther = ids.some(function(otherId){
+        if(otherId === id) return false;
+        var o = nodeFor[otherId]; return o && o !== mNode && o.contains(mNode);
+      });
+      if(containedByOther) return;
+      var L = findLayer(id); if(!L) return;
+      var parent = mNode.parentElement; if(!parent) return;
+      var indexInParent = Array.prototype.indexOf.call(parent.children, mNode);
+      var nestedTextIds = Array.from(mNode.querySelectorAll('['+CMS_ATTR+']')).map(function(n){return n.getAttribute(CMS_ATTR);});
+      nestedTextIds.unshift(id);
+      var nestedAssetIds = Array.from(mNode.querySelectorAll('['+ASSET_ATTR+'],[data-ll-asset-poster]')).map(function(n){return n.getAttribute(ASSET_ATTR) || n.getAttribute('data-ll-asset-poster');});
+      snapshots.push({ id:id, html:mNode.outerHTML, parentLoc:parentLocator(parent), indexInParent:indexInParent,
+                       textIds:nestedTextIds, assetIds:nestedAssetIds, tag:L.tag.toUpperCase(), text:snippet(L.text||'') });
+    });
+    if(!snapshots.length) return;
+    // STEP 2 — perform the deletes (order doesn't matter for correctness since we already have all the data)
+    snapshots.forEach(function(d){
+      var mNode = state.doc.querySelector('['+CMS_ATTR+'="'+d.id+'"]');
+      if(mNode) mNode.remove();
       var pdoc = preview.contentDocument;
-      if(pdoc){
-        var pParent = findParent(pdoc, d.parentSelector);
-        var pNext = d.nextSibText ? pdoc.querySelector(d.nextSibText) : null;
-        var pFrag = pdoc.createElement('div'); pFrag.innerHTML = d.html;
-        var pNode = pFrag.firstElementChild;
-        if(pParent && pNode){ pParent.insertBefore(pNode, pNext || null); }
+      var pNode = pdoc && pdoc.querySelector('['+CMS_ATTR+'="'+d.id+'"]');
+      if(pNode) pNode.remove();
+    });
+    snapshots.forEach(function(d){
+      state.layers = state.layers.filter(function(L){ return d.textIds.indexOf(L.id) === -1; });
+      state.assets = state.assets.filter(function(A){ return d.assetIds.indexOf(A.id) === -1; });
+    });
+    pushHistory({type:'delete', deletions:snapshots, t:Date.now()});
+    snapshots.forEach(function(d){
+      logChange({kind:'delete',path:'',before:{tag:d.tag,text:d.text,html:d.html},after:null});
+    });
+    renderLayers(searchEl.value.toLowerCase().trim());
+    renderAssets(searchEl.value.toLowerCase().trim());
+    updateDownloadLabel();
+    showToast('✓ Deleted '+snapshots.length+' element'+(snapshots.length===1?'':'s'));
+    scheduleSave();
+  }
+  function deleteAssets(ids){
+    var nodeFor = {};
+    ids.forEach(function(id){
+      var A=findAsset(id); if(!A) return;
+      var sel = A.kind==='poster' ? '[data-ll-asset-poster="'+id+'"]' : '['+ASSET_ATTR+'="'+id+'"]';
+      nodeFor[id] = state.doc && state.doc.querySelector(sel);
+    });
+    var snapshots = [];
+    ids.forEach(function(aid){
+      var A = findAsset(aid); if(!A) return;
+      var mNode = nodeFor[aid]; if(!mNode) return;
+      if(A.kind === 'poster'){
+        snapshots.push({ id:aid, kind:'poster', hostLoc:parentLocator(mNode),
+                         posterVal: mNode.getAttribute('poster')||'', tag:'POSTER', text:baseName(mNode.getAttribute('poster')||''), html:'' });
+        return;
       }
+      var parent = mNode.parentElement; if(!parent) return;
+      var indexInParent = Array.prototype.indexOf.call(parent.children, mNode);
+      snapshots.push({ id:aid, kind:A.kind, html:mNode.outerHTML, parentLoc:parentLocator(parent),
+                       indexInParent:indexInParent, tag:A.kind.toUpperCase(), text:baseName(A.origSrc) });
+    });
+    if(!snapshots.length) return;
+    snapshots.forEach(function(d){
+      if(d.kind==='poster'){
+        var host = state.doc.querySelector('[data-ll-asset-poster="'+d.id+'"]');
+        if(host){ host.removeAttribute('poster'); host.removeAttribute('data-ll-asset-poster'); }
+        var pHost = preview.contentDocument && preview.contentDocument.querySelector('[data-ll-asset-poster="'+d.id+'"]');
+        if(pHost){ pHost.removeAttribute('poster'); pHost.removeAttribute('data-ll-asset-poster'); }
+      } else {
+        var mNode = state.doc.querySelector('['+ASSET_ATTR+'="'+d.id+'"]');
+        if(mNode) mNode.remove();
+        var pn = preview.contentDocument && preview.contentDocument.querySelector('['+ASSET_ATTR+'="'+d.id+'"]');
+        if(pn) pn.remove();
+      }
+      state.assets = state.assets.filter(function(X){ return X.id!==d.id; });
+    });
+    pushHistory({type:'delete-asset', deletions:snapshots, t:Date.now()});
+    snapshots.forEach(function(d){
+      logChange({kind:'delete',path:'',before:{tag:d.tag,text:d.text,html:d.html},after:null});
+    });
+    renderAssets(searchEl.value.toLowerCase().trim());
+    updateDownloadLabel();
+    showToast('✓ Deleted '+snapshots.length+' asset'+(snapshots.length===1?'':'s'));
+    scheduleSave();
+  }
+
+  // ---- drag-to-reorder (within the same DOM parent) ----
+  var dragState = null;  // { id, kind:'text'|'asset' }
+  function attachDrag(row, id, kind){
+    var grip = row.querySelector('.grip');
+    if(!grip) return;
+    // grip enables drag; rest of row stays clickable
+    grip.draggable = true;
+    grip.addEventListener('dragstart', function(e){
+      dragState = { id:id, kind:kind };
+      row.classList.add('dragging');
+      try{ e.dataTransfer.setData('text/plain', id); }catch(_){}
+      e.dataTransfer.effectAllowed = 'move';
+      // use the row itself as the drag image so it visually matches
+      try{ e.dataTransfer.setDragImage(row, 14, 14); }catch(_){}
+    });
+    grip.addEventListener('dragend', function(){
+      row.classList.remove('dragging');
+      clearDropMarkers();
+      dragState = null;
+    });
+
+    row.addEventListener('dragover', function(e){
+      if(!dragState || dragState.id===id || dragState.kind!==kind) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      var rect = row.getBoundingClientRect();
+      var above = (e.clientY - rect.top) < rect.height/2;
+      clearDropMarkers();
+      // valid only if the dragged element and this target share the same DOM parent
+      var attr = kind==='text' ? CMS_ATTR : ASSET_ATTR;
+      var sourceNode = state.doc.querySelector('['+attr+'="'+dragState.id+'"]');
+      var targetNode = state.doc.querySelector('['+attr+'="'+id+'"]');
+      if(!sourceNode || !targetNode || sourceNode.parentElement !== targetNode.parentElement){
+        row.classList.add('drop-invalid');
+        return;
+      }
+      row.classList.add(above ? 'drop-above' : 'drop-below');
+    });
+    row.addEventListener('dragleave', function(){ clearDropMarkersFor(row); });
+    row.addEventListener('drop', function(e){
+      if(!dragState || dragState.id===id || dragState.kind!==kind){ clearDropMarkers(); return; }
+      e.preventDefault();
+      var rect = row.getBoundingClientRect();
+      var above = (e.clientY - rect.top) < rect.height/2;
+      clearDropMarkers();
+      performReorder(dragState.id, id, above, kind);
+    });
+  }
+  function clearDropMarkersFor(row){ row.classList.remove('drop-above','drop-below','drop-invalid'); }
+  function clearDropMarkers(){
+    document.querySelectorAll('.drop-above,.drop-below,.drop-invalid').forEach(function(r){
+      r.classList.remove('drop-above','drop-below','drop-invalid');
+    });
+  }
+  function performReorder(sourceId, targetId, above, kind){
+    var attr = kind==='text' ? CMS_ATTR : ASSET_ATTR;
+    var source = state.doc.querySelector('['+attr+'="'+sourceId+'"]');
+    var target = state.doc.querySelector('['+attr+'="'+targetId+'"]');
+    if(!source || !target){ showToast('Could not find element to reorder'); return; }
+    if(source.parentElement !== target.parentElement){
+      showToast('⚠ Can only reorder within the same group');
+      return;
+    }
+    var parent = source.parentElement;
+    var beforeIndex = Array.prototype.indexOf.call(parent.children, source);
+    var targetIdx = Array.prototype.indexOf.call(parent.children, target);
+    // calculate the final index the source should end up at AFTER the move
+    var targetAdj = beforeIndex < targetIdx ? targetIdx - 1 : targetIdx;
+    var newIdx = above ? targetAdj : targetAdj + 1;
+    if(newIdx === beforeIndex) return;
+
+    moveNodeInParent(state.doc, source, newIdx);
+    var pdoc = preview.contentDocument;
+    if(pdoc){
+      var pSrc = pdoc.querySelector('['+attr+'="'+sourceId+'"]');
+      if(pSrc) moveNodeInParent(pdoc, pSrc, newIdx);
+    }
+
+    var parentLoc = parentLocator(parent);
+    pushHistory({type:'reorder', kind:kind, id:sourceId, parentLoc:parentLoc, beforeIndex:beforeIndex, afterIndex:newIdx, t:Date.now()});
+    logChange({kind:'reorder', path: pathFor(sourceId, kind),
+      before:{ label:'index '+beforeIndex }, after:{ label:'index '+newIdx, tag:source.tagName.toLowerCase() }});
+
+    resortByDoc();
+    renderLayers(searchEl.value.toLowerCase().trim());
+    renderAssets(searchEl.value.toLowerCase().trim());
+    scheduleSave();
+    showToast('✓ Moved '+source.tagName.toLowerCase());
+  }
+  // direction-aware sibling move: when moving FORWARD past intermediate siblings,
+  // their indices shift down after removal — compensate by referencing children[newIdx+1].
+  function moveNodeInParent(root, node, newIdx){
+    var parent = node.parentElement;
+    if(!parent) return;
+    var curIdx = Array.prototype.indexOf.call(parent.children, node);
+    if(curIdx === newIdx) return;
+    var ref = newIdx > curIdx
+      ? (parent.children[newIdx + 1] || null)
+      : (parent.children[newIdx]     || null);
+    if(ref === node) return;
+    parent.insertBefore(node, ref);
+  }
+  function applyReorder(entry, dir){
+    var attr = entry.kind==='text' ? CMS_ATTR : ASSET_ATTR;
+    var source = state.doc.querySelector('['+attr+'="'+entry.id+'"]');
+    if(!source) return;
+    var idx = dir==='forward' ? entry.afterIndex : entry.beforeIndex;
+    moveNodeInParent(state.doc, source, idx);
+    var pdoc = preview.contentDocument;
+    if(pdoc){
+      var p = pdoc.querySelector('['+attr+'="'+entry.id+'"]');
+      if(p) moveNodeInParent(pdoc, p, idx);
+    }
+    resortByDoc();
+    renderLayers(searchEl.value.toLowerCase().trim());
+    renderAssets(searchEl.value.toLowerCase().trim());
+    scheduleSave();
+  }
+
+  function insertAtIndex(parent, node, idx){
+    var ref = parent.children[idx] || null;
+    parent.insertBefore(node, ref);
+  }
+  function undoDelete(entry){
+    // group by parent, sort each group by original indexInParent ascending,
+    // then insert each at children[indexInParent]. The growing children list
+    // realigns indices as we insert.
+    var groups = {};
+    entry.deletions.forEach(function(d){
+      var k = JSON.stringify(d.parentLoc);
+      (groups[k] = groups[k] || []).push(d);
+    });
+    Object.keys(groups).forEach(function(k){
+      groups[k].sort(function(a,b){ return a.indexInParent - b.indexInParent; });
+      groups[k].forEach(function(d){
+        var parent = findParent(state.doc, d.parentLoc);
+        if(parent){
+          var frag = state.doc.createElement('div'); frag.innerHTML = d.html;
+          var node = frag.firstElementChild;
+          if(node) insertAtIndex(parent, node, d.indexInParent);
+        }
+        var pdoc = preview.contentDocument;
+        if(pdoc){
+          var pParent = findParent(pdoc, d.parentLoc);
+          if(pParent){
+            var pFrag = pdoc.createElement('div'); pFrag.innerHTML = d.html;
+            var pNode = pFrag.firstElementChild;
+            if(pNode) insertAtIndex(pParent, pNode, d.indexInParent);
+          }
+        }
+      });
     });
     rebuildIndex();
+    resortByDoc();
     renderLayers(searchEl.value.toLowerCase().trim());
     renderAssets(searchEl.value.toLowerCase().trim());
     updateDownloadLabel();
     scheduleSave();
   }
   function undoDeleteAsset(entry){
-    entry.deletions.slice().reverse().forEach(function(d){
+    var groups = {};
+    entry.deletions.forEach(function(d){
       if(d.kind==='poster'){
-        // host was kept; re-set the poster attribute
-        var hostInModel = state.doc.querySelector('['+ASSET_ATTR+'="'+(d.id+'-host')+'"]') || d.host;
-        if(d.host) { d.host.setAttribute('poster', d.posterVal); d.host.setAttribute('data-ll-asset-poster', d.id); }
-        var pPoster = preview.contentDocument && (preview.contentDocument.querySelector('[data-ll-id]')); // best effort
+        var host = findParent(state.doc, d.hostLoc);
+        if(host){ host.setAttribute('poster', d.posterVal); host.setAttribute('data-ll-asset-poster', d.id); }
+        var pHost = preview.contentDocument ? findParent(preview.contentDocument, d.hostLoc) : null;
+        if(pHost){ pHost.setAttribute('poster', d.posterVal); pHost.setAttribute('data-ll-asset-poster', d.id); }
         return;
       }
-      var parent = findParent(state.doc, d.parentSelector);
-      var nextSib = d.nextSibText ? state.doc.querySelector(d.nextSibText) : null;
-      var frag = state.doc.createElement('div'); frag.innerHTML = d.html;
-      var node = frag.firstElementChild;
-      if(parent && node){ parent.insertBefore(node, nextSib || null); }
-      var pdoc = preview.contentDocument;
-      if(pdoc){
-        var pParent = findParent(pdoc, d.parentSelector);
-        var pNext = d.nextSibText ? pdoc.querySelector(d.nextSibText) : null;
-        var pFrag = pdoc.createElement('div'); pFrag.innerHTML = d.html;
-        var pNode = pFrag.firstElementChild;
-        if(pParent && pNode){ pParent.insertBefore(pNode, pNext || null); }
-      }
+      var k = JSON.stringify(d.parentLoc);
+      (groups[k] = groups[k] || []).push(d);
+    });
+    Object.keys(groups).forEach(function(k){
+      groups[k].sort(function(a,b){ return a.indexInParent - b.indexInParent; });
+      groups[k].forEach(function(d){
+        var parent = findParent(state.doc, d.parentLoc);
+        if(parent){
+          var frag = state.doc.createElement('div'); frag.innerHTML = d.html;
+          var node = frag.firstElementChild;
+          if(node) insertAtIndex(parent, node, d.indexInParent);
+        }
+        var pdoc = preview.contentDocument;
+        if(pdoc){
+          var pParent = findParent(pdoc, d.parentLoc);
+          if(pParent){
+            var pFrag = pdoc.createElement('div'); pFrag.innerHTML = d.html;
+            var pNode = pFrag.firstElementChild;
+            if(pNode) insertAtIndex(pParent, pNode, d.indexInParent);
+          }
+        }
+      });
     });
     rebuildIndex();
+    resortByDoc();
     renderAssets(searchEl.value.toLowerCase().trim());
     updateDownloadLabel();
     scheduleSave();
@@ -1426,13 +1649,15 @@
       var row=document.createElement('div'); row.className='layer'; row.dataset.id=L.id;
       if(selection.has(L.id)) row.classList.add('selected');
       var top=document.createElement('div'); top.className='layer-top';
+      var grip=document.createElement('div'); grip.className='grip'; grip.title='Drag to reorder within the same parent';
       var check=document.createElement('div'); check.className='check'; check.title='Select for delete (Shift-click to multi-select)';
       var pill=document.createElement('span'); pill.className='pill'; pill.textContent=L.tag;
       var path=document.createElement('span'); path.className='path'; path.textContent=L.path||'body';
-      top.appendChild(check); top.appendChild(pill); top.appendChild(path);
+      top.appendChild(grip); top.appendChild(check); top.appendChild(pill); top.appendChild(path);
       var ta=document.createElement('textarea'); ta.value=L.text; ta.dataset.for=L.id; ta.rows=1;
       row.appendChild(top); row.appendChild(ta); layersEl.appendChild(row);
       autosize(ta);
+      attachDrag(row, L.id, 'text');
 
       check.addEventListener('click', function(e){ e.stopPropagation(); toggleSelect(L.id, true); });
 
@@ -1478,6 +1703,9 @@
 
       var row=document.createElement('div'); row.className='asset'; row.dataset.aid=rec.id;
       if(selection.has(rec.id)) row.classList.add('selected');
+
+      var grip=document.createElement('div'); grip.className='grip'; grip.title='Drag to reorder within the same parent';
+      row.appendChild(grip);
 
       var check=document.createElement('div'); check.className='check'; check.title='Select for delete (Shift-click to multi-select)';
       check.style.marginTop='4px';
@@ -1539,16 +1767,27 @@
       check.addEventListener('click', function(e){ e.stopPropagation(); toggleSelect(rec.id, true); });
 
       // drag a file straight onto the row to replace
+      // drag a file straight onto the row to replace (distinct from reorder drag via the grip)
       ['dragenter','dragover'].forEach(function(ev){
-        row.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); row.classList.add('drag-hot'); });
+        row.addEventListener(ev, function(e){
+          if(dragState) return;                                          // a reorder drag is in progress; let attachDrag handle it
+          if(!e.dataTransfer || !Array.from(e.dataTransfer.types||[]).includes('Files')) return;
+          e.preventDefault(); e.stopPropagation(); row.classList.add('drag-hot');
+        });
       });
       ['dragleave','drop'].forEach(function(ev){
-        row.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); row.classList.remove('drag-hot'); });
+        row.addEventListener(ev, function(e){
+          if(dragState) return;
+          if(!e.dataTransfer || !Array.from(e.dataTransfer.types||[]).includes('Files')) return;
+          e.preventDefault(); e.stopPropagation(); row.classList.remove('drag-hot');
+        });
       });
       row.addEventListener('drop', function(e){
+        if(dragState) return;
         var f=e.dataTransfer.files && e.dataTransfer.files[0];
         if(f) handleAssetFile(rec, f);
       });
+      attachDrag(row, rec.id, 'asset');
     });
     assetCount.textContent=state.assets.length;
     tabAssetsN.textContent=shown;
