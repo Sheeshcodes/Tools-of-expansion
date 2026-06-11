@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tools of Expansion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=IBM+Plex+Sans:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg-top: #2c1a86;
+    --bg-bottom: #676bdb;
+    --blob: #3f7fff;
+    --lavender: #b4b7ff;
+    --label: #676bdb;
+    --label-hover: #b4b6ff;
+    --access: #8185ec;
+    --pill-default: #a9acff;
+    --pill-grad-top: #a9acff;
+    --pill-grad-bottom: #dcdeff;
+    --border: rgba(255, 255, 255, 0.24);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; background: #14102e; overflow: hidden; }
+
+  /* ===== Screen switching ===== */
+  .screen {
+    position: fixed; inset: 0;
+    opacity: 0; visibility: hidden;
+    transition: opacity 0.45s ease, visibility 0.45s ease;
+  }
+  .screen.active { opacity: 1; visibility: visible; }
+
+  #screen-cover { display: grid; place-items: center; background: #14102e; }
+  #screen-team { overflow-y: auto; background: #14102e; }
+
+  /* =====================================================================
+     COVER
+     ===================================================================== */
+  .stage {
+    position: relative; width: 1920px; height: 1080px; flex: none;
+    transform-origin: center center;
+    background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+    overflow: hidden;
+  }
+
+  .banner { position: absolute; left: 122.5px; top: 72px; width: 1680.54px; height: 417.61px; }
+
+  .label-button {
+    position: absolute; left: 0; top: 0; z-index: 3;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 24px; line-height: 1.254;
+    color: var(--label); text-decoration: none; cursor: pointer;
+    transition: color 0.25s ease; background: none; border: none; padding: 0;
+  }
+  .label-button:hover, .label-button:focus-visible { color: var(--label-hover); }
+  .label-button:focus-visible { outline: 2px solid var(--label-hover); outline-offset: 4px; }
+
+  .wordmark { position: absolute; left: 0; top: 88.1px; width: 1680.54px; height: 251px; }
+  .wordmark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .wordmark text {
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 200px; fill: #000;
+    paint-order: stroke fill; stroke: var(--blob);
+    stroke-width: 26px; stroke-linejoin: round; stroke-linecap: round;
+  }
+
+  .artefact-tag {
+    position: absolute; left: 1413px; top: 387.61px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 24px; line-height: 1.254;
+    color: var(--lavender); white-space: nowrap;
+  }
+
+  .description {
+    position: absolute; left: 1121.14px; top: 696.4px; width: 681.9px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 24px; line-height: 1.26;
+    letter-spacing: 0.48px; color: var(--lavender); transition: opacity 0.15s ease;
+  }
+
+  .list { position: absolute; left: 72px; top: 708.69px; width: 1000px; display: flex; flex-direction: column; gap: 9px; }
+  .list-label { font-family: 'IBM Plex Sans', sans-serif; font-size: 24px; line-height: 1.254; color: var(--access); }
+  .list-items {
+    display: flex; flex-direction: column; gap: 12px; width: 100%;
+    max-height: 300px; overflow-y: auto; overflow-x: hidden;
+    padding: 10px 14px 10px 8px;
+    scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  }
+  .list-items::-webkit-scrollbar { width: 6px; }
+  .list-items::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); border-radius: 3px; }
+
+  .list-item {
+    display: flex; align-items: center; justify-content: flex-start; gap: 20px;
+    width: 100%; padding: 12px 0;
+    border: none; border-bottom: 1px solid var(--border);
+    background: none; cursor: pointer; text-align: left;
+    transition: transform 0.32s cubic-bezier(0.34, 1.3, 0.64, 1),
+                border-color 0.3s ease, opacity 0.3s ease;
+  }
+  .list-item:hover, .list-item:focus-visible { transform: translateY(-8px); border-bottom-color: transparent; }
+  .list-item:focus-visible { outline: 2px solid var(--lavender); outline-offset: 6px; }
+  .list-item.dimmed { opacity: 0.2; }
+  .list-item.dimmed:hover, .list-item.dimmed:focus-visible { opacity: 0.38; }
+
+  .item-pill { position: relative; display: flex; align-items: center; padding: 4px 24px; border-radius: 999px; }
+  .item-pill .highlight {
+    position: absolute; inset: 0; border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0.17) 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    transform: scaleX(0); transform-origin: left center;
+    transition: transform 0.45s cubic-bezier(0.45, 0, 0.15, 1);
+  }
+  .list-item:hover .item-pill .highlight,
+  .list-item:focus-visible .item-pill .highlight { transform: scaleX(1); }
+  .item-pill p {
+    position: relative; z-index: 1;
+    font-family: 'IBM Plex Mono', monospace; font-size: 48px; line-height: 1.254;
+    color: #fff; white-space: nowrap;
+  }
+
+  .arrow-button { position: relative; flex: none; width: 83.9px; height: 60.8px; }
+  .arrow-button .bg {
+    position: absolute; top: 0; left: 11.55px; right: 11.55px; height: 60.8px;
+    border-radius: 30.4px; background: var(--pill-default);
+    transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), right 0.35s cubic-bezier(0.4, 0, 0.2, 1), background 0.35s ease;
+  }
+  .list-item:hover .arrow-button .bg, .list-item:focus-visible .arrow-button .bg {
+    left: 0; right: 0;
+    background: linear-gradient(180deg, var(--pill-grad-top) 0%, var(--pill-grad-bottom) 100%);
+  }
+  .arrow-button .icon { position: absolute; left: 26px; top: 14.4px; width: 32px; height: 32px; }
+
+  /* =====================================================================
+     TEAM PAGE
+     ===================================================================== */
+  .team-page {
+    min-height: 100%;
+    background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+    padding-bottom: 16px;
+  }
+  .team-inner { max-width: 1152px; margin: 0 auto; padding: 0 32px; }
+
+  /* Clickable banner -> back to cover */
+  .team-banner {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 51px 0 8px; margin: 0 auto; background: none; border: none;
+    cursor: pointer; transition: transform 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
+  }
+  .team-banner:hover, .team-banner:focus-visible { transform: translateY(-3px); }
+  .team-banner:focus-visible { outline: none; }
+  .team-banner:focus-visible .team-wordmark text { stroke: #5a8cff; }
+  .team-wordmark { width: 560px; height: 132px; }
+  .team-wordmark svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .team-wordmark text {
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 80px; fill: #000;
+    paint-order: stroke fill; stroke: var(--blob);
+    stroke-width: 30px; stroke-linejoin: round; stroke-linecap: round;
+    transition: stroke 0.25s ease;
+  }
+  .team-artefact {
+    align-self: flex-end; margin-top: 2px; margin-right: 6px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 16px; color: var(--lavender);
+  }
+  .team-back-hint {
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; letter-spacing: 0.5px;
+    color: var(--lavender); opacity: 0; margin-top: 14px; transition: opacity 0.25s ease;
+  }
+  .team-banner:hover .team-back-hint, .team-banner:focus-visible .team-back-hint { opacity: 0.75; }
+
+  .team-label {
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 24px; color: var(--access);
+    margin-top: 64px; margin-bottom: 40px;
+  }
+
+  .team-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 56px 72px; }
+
+  .member {
+    display: flex; gap: 28px; align-items: flex-start;
+    opacity: 0; filter: blur(16px); transform: translateX(-30px);
+    transition: opacity 0.9s ease, filter 0.9s ease, transform 0.9s cubic-bezier(0.2, 0.7, 0.3, 1);
+    transition-delay: var(--d, 0s);
+  }
+  .team-grid.reveal .member { opacity: 1; filter: blur(0); transform: none; }
+  .avatar {
+    flex: none; width: 196px; height: 196px; background: var(--blob);
+    border-radius: 24px; overflow: hidden; position: relative;
+  }
+  .avatar img {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    filter: grayscale(1) contrast(1.05) brightness(1.02);
+    clip-path: url(#avatarBlob);
+  }
+  .avatar::after {
+    content: ''; position: absolute; inset: 0;
+    background: var(--blob); mix-blend-mode: color; opacity: 0.4; pointer-events: none;
+    clip-path: url(#avatarBlob);
+  }
+  .member-info { padding-top: 4px; min-width: 0; }
+  .member-name {
+    font-family: 'IBM Plex Sans', sans-serif; font-weight: 700; font-size: 28px;
+    line-height: 1.26; letter-spacing: 0.56px; color: var(--lavender);
+  }
+  .member-role {
+    font-family: 'IBM Plex Sans', sans-serif; font-weight: 400; font-size: 28px;
+    line-height: 1.26; letter-spacing: 0.56px; color: var(--lavender);
+  }
+  .member-email {
+    display: inline-block; margin-top: 22px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 18px; line-height: 1.26;
+    letter-spacing: 0.36px; color: var(--lavender); text-decoration: none;
+    opacity: 0.92; transition: opacity 0.2s ease; word-break: break-word;
+  }
+  .member-email:hover { opacity: 1; text-decoration: underline; }
+
+  .team-footer {
+    text-align: center; padding: 64px 0 28px;
+    font-family: 'IBM Plex Sans', sans-serif; font-size: 20px;
+    color: #b6b9ff; opacity: 0.7;
+  }
+
+  @media (max-width: 760px) {
+    .team-grid { grid-template-columns: 1fr; }
+    .team-wordmark { width: min(90vw, 560px); height: auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- Blob clip-path (scalloped top & bottom) shared by every team photo -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <clipPath id="avatarBlob" clipPathUnits="objectBoundingBox">
+      <path d="M0.015,0.13 Q0.1767,0.015 0.3383,0.13 Q0.5,0.015 0.6617,0.13 Q0.8233,0.015 0.985,0.13 L0.985,0.87 Q0.8233,0.985 0.6617,0.87 Q0.5,0.985 0.3383,0.87 Q0.1767,0.985 0.015,0.87 Z" />
+    </clipPath>
+  </defs>
+</svg>
+
+<!-- ========================= COVER ========================= -->
+<section class="screen active" id="screen-cover">
+  <main class="stage" id="stage" aria-label="Tools of Expansion cover">
+
+    <div class="banner">
+      <button class="label-button" type="button" id="view-team">View team</button>
+
+      <div class="wordmark">
+        <svg viewBox="0 0 1680.54 251" role="img" aria-label="Tools of Expansion">
+          <rect x="11.37" y="92.24" width="1669.17" height="96.43" fill="#3f7fff" />
+          <text id="wordmark-text" x="0" y="190" textLength="1675" lengthAdjust="spacingAndGlyphs">Tools of Expansion</text>
+        </svg>
+      </div>
+
+      <p class="artefact-tag">A consumability artefact</p>
+    </div>
+
+    <p class="description" id="description"></p>
+
+    <div class="list">
+      <p class="list-label">Access:</p>
+      <div class="list-items" id="list-items">
+
+        <button class="list-item active" type="button" data-key="ester" data-href="esters-pen-v4.html">
+          <span class="item-pill"><span class="highlight"></span><p>Ester&rsquo;s pen</p></span>
+          <span class="arrow-button" aria-hidden="true">
+            <span class="bg"></span>
+            <svg class="icon" viewBox="0 0 16 16" fill="none"><path d="M8.7 2.7 7.64 3.76 11.13 7.25H2v1.5h9.13L7.64 12.24 8.7 13.3 14 8 8.7 2.7Z" fill="#000"/></svg>
+          </span>
+        </button>
+
+        <button class="list-item dimmed" type="button" data-key="readiness">
+          <span class="item-pill"><span class="highlight"></span><p>Readiness Assessment tool</p></span>
+          <span class="arrow-button" aria-hidden="true">
+            <span class="bg"></span>
+            <svg class="icon" viewBox="0 0 16 16" fill="none"><path d="M8.7 2.7 7.64 3.76 11.13 7.25H2v1.5h9.13L7.64 12.24 8.7 13.3 14 8 8.7 2.7Z" fill="#000"/></svg>
+          </span>
+        </button>
+
+      </div>
+    </div>
+
+  </main>
+</section>
+
+<!-- ========================= TEAM ========================= -->
+<section class="screen" id="screen-team">
+  <div class="team-page">
+    <div class="team-inner">
+
+      <button class="team-banner" type="button" id="team-back" aria-label="Back to cover">
+        <div class="team-wordmark">
+          <svg viewBox="0 0 560 110" role="img" aria-label="Tools of Expansion">
+            <rect x="3" y="40" width="554" height="40" fill="#3f7fff" />
+            <text x="0" y="80" textLength="556" lengthAdjust="spacingAndGlyphs">Tools of Expansion</text>
+          </svg>
+        </div>
+        <span class="team-artefact">A consumability artefact</span>
+        <span class="team-back-hint">&larr; back to Home</span>
+      </button>
+
+      <p class="team-label">Team members:</p>
+
+      <div class="team-grid" id="team-grid"></div>
+
+      <p class="team-footer">ToolsOfExpansion | A consumability artefact</p>
+
+    </div>
+  </div>
+</section>
+
+<script>
+  /* ---------- Cover: scale the 1920x1080 stage to fit ---------- */
+  const stage = document.getElementById('stage');
+  function fit() {
+    const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+    stage.style.transform = `scale(${s})`;
+  }
+  window.addEventListener('resize', fit);
+  fit();
+
+  /* ---------- Dynamic description ---------- */
+  const DESCRIPTIONS = {
+    ester: "Ester\u2019s Pen is a lightweight HTML editor that closes the loop between UX and content designers. Drop in any HTML artefact (an emailer, a Bob-generated prototype, an AI-generated HLD) and every text layer, image, icon, and video becomes editable inline against a live preview. Content folks iterate on copy and swap assets without touching code, and designers get the file back with structure and styling untouched.",
+    readiness: "The Readiness Assessment tool gives a team an honest read on whether they\u2019re set up to adopt a new capability before they commit to it. Answer a short set of prompts across people, process, and tooling, and it returns a weighted score with the specific gaps worth closing first \u2014 so you can decide what to roll out now, what to stage, and where a little prep saves a lot of rework later.",
+    comingsoon: "It\u2019ll be something cool, we\u2019ll let you know when it is here."
+  };
+  const descEl = document.getElementById('description');
+  const items = Array.from(document.querySelectorAll('.list-item'));
+  const activeKey = (document.querySelector('.list-item.active') || items[0]).dataset.key;
+  let currentKey = null;
+  function setDescription(key) {
+    if (key === currentKey) return;
+    currentKey = key;
+    descEl.style.opacity = 0;
+    setTimeout(() => {
+      descEl.textContent = key ? (DESCRIPTIONS[key] || '') : '';
+      descEl.style.opacity = key ? 1 : 0;
+    }, 150);
+  }
+  items.filter((item) => item.dataset.key).forEach((item) => {
+    const key = item.dataset.key;
+    item.addEventListener('pointerenter', () => setDescription(key));
+    item.addEventListener('focus', () => setDescription(key));
+    item.addEventListener('pointerleave', () => setDescription(null));
+    item.addEventListener('blur', () => setDescription(null));
+  });
+
+  /* ---------- Add 6 "Coming soon" (disabled) tools ---------- */
+  const listItemsEl = document.getElementById('list-items');
+  const arrowMarkup = '<span class="arrow-button" aria-hidden="true"><span class="bg"></span><svg class="icon" viewBox="0 0 16 16" fill="none"><path d="M8.7 2.7 7.64 3.76 11.13 7.25H2v1.5h9.13L7.64 12.24 8.7 13.3 14 8 8.7 2.7Z" fill="#000"/></svg></span>';
+  for (let k = 0; k < 6; k++) {
+    listItemsEl.insertAdjacentHTML('beforeend',
+      `<button class="list-item dimmed" type="button" aria-disabled="true" data-key="comingsoon"><span class="item-pill"><span class="highlight"></span><p>Coming soon</p></span>${arrowMarkup}</button>`);
+  }
+  document.querySelectorAll('.list-item[data-key="comingsoon"]').forEach((item) => {
+    item.addEventListener('pointerenter', () => setDescription('comingsoon'));
+    item.addEventListener('focus', () => setDescription('comingsoon'));
+    item.addEventListener('pointerleave', () => setDescription(null));
+    item.addEventListener('blur', () => setDescription(null));
+  });
+
+  /* ---------- Tool links: open a tool's HTML file when its item is clicked ---------- */
+  document.querySelectorAll('.list-item[data-href]').forEach((item) => {
+    item.addEventListener('click', () => { window.location.href = item.getAttribute('data-href'); });
+  });
+
+  /* ---------- Breathing wordmark: 100% -> 1000% -> 100%, always looping ---------- */
+  const text = document.getElementById('wordmark-text');
+  const BASE = 26, MAX_MULT = 10, PERIOD = 9000, BIAS = 1.3;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let cycleStart = performance.now();
+  function applyStroke(p) { text.style.strokeWidth = (BASE * p / 100).toFixed(1) + 'px'; }
+  function frame(now) {
+    const phase = ((now - cycleStart) % PERIOD) / PERIOD;
+    let e = 0.5 - 0.5 * Math.cos(phase * 2 * Math.PI);
+    e = Math.pow(e, BIAS);
+    applyStroke(100 + (100 * MAX_MULT - 100) * e);
+    requestAnimationFrame(frame);
+  }
+  if (reduceMotion) applyStroke(100); else requestAnimationFrame(frame);
+
+  /* ---------- Team data + cards ---------- */
+  // After running download-photos.sh and committing the ./images folder,
+  // set USE_LOCAL = true so the photos load from your repo forever.
+  const USE_LOCAL = true;
+  const ASSET = "https://www.figma.com/api/mcp/asset/";
+  const TEAM = [
+    { name: "Anvita Beohar",          role: "UX design intern",        email: "Anvita.Beohar@ibm.com",      slug: "anvita-beohar",          img: "aad2477c-7baa-49c6-803e-f9cfe4591705" },
+    { name: "Ashish John Mundu",      role: "Visual + UX designer",    email: "ashish.mundu1@ibm.com",      slug: "ashish-john-mundu",      img: "430e2899-f433-4cd7-a0f3-9c08a26c6cb7" },
+    { name: "Beatrice Lontano",       role: "",                        email: "Beatrice.Lontano@ibm.com",   slug: "beatrice-lontano",       img: "982dc43a-8578-4309-aec6-2d7701487a74" },
+    { name: "Bharghavi Kirubasankar", role: "Senior Designer",         email: "bharghavi@ibm.com",          slug: "bharghavi-kirubasankar", img: "0f3bce81-b929-4133-bc9b-53008f834438" },
+    { name: "Catherine Pulickan",     role: "",                        email: "catherine.pulickan@ibm.com", slug: "catherine-pulickan",     img: "8f06d87c-a3ac-448f-b736-9781cbc782de" },
+    { name: "Cindy Hoang",            role: "UX Visual Designer",      email: "Cindy.Hoang@ibm.com",        slug: "cindy-hoang",            img: "c8354daf-41b1-4e48-bb87-7b7e6d6a29f5" },
+    { name: "Emily Lucitt-O\u2019Connor", role: "Lead UX Researcher",   email: "Emily.Lucitt@ibm.com",       slug: "emily-lucitt-oconnor",   img: "3f7f564a-bd2e-4c14-aed0-0cca3c617be9" },
+    { name: "Ester Monroy Gatell",    role: "Content Designer",        email: "ester.monroy@ibm.com",       slug: "ester-monroy-gatell",    img: "b4f08ad8-5c59-4da4-bcfd-22da74b8b7b0" },
+    { name: "Kamaljeet Singh",        role: "UX Designer",             email: "kamaljeet.singh@ibm.com",    slug: "kamaljeet-singh",        img: "f531aadc-4c21-4e20-8867-319d7df37c30" },
+    { name: "Karen Gosriminski",      role: "Product Experience Lead", email: "kgoscimi@us.ibm.com",        slug: "karen-gosriminski",      img: "580e4246-5816-49b9-95ee-0566901bc6d8" }
+  ];
+  const photoSrc = (m) => USE_LOCAL ? `images/${m.slug}.jpg` : ASSET + m.img;
+  const grid = document.getElementById('team-grid');
+  grid.innerHTML = TEAM.map((m, i) => {
+    const col = i % 2, row = Math.floor(i / 2);
+    const delay = (row * 0.32 + col * 0.12).toFixed(2);  // row by row, top to bottom
+    return `
+    <article class="member" style="--d:${delay}s">
+      <div class="avatar"><img src="${photoSrc(m)}" alt="${m.name}" loading="lazy" /></div>
+      <div class="member-info">
+        <p class="member-name">${m.name}</p>
+        ${m.role ? `<p class="member-role">${m.role}</p>` : ``}
+        <a class="member-email" href="mailto:${m.email}">${m.email}</a>
+      </div>
+    </article>`;
+  }).join('');
+  function revealTeam() {
+    grid.classList.remove('reveal');
+    void grid.offsetWidth;   // force reflow so the transition replays
+    grid.classList.add('reveal');
+  }
+
+  /* ---------- Navigation between cover and team ---------- */
+  const screens = { cover: document.getElementById('screen-cover'), team: document.getElementById('screen-team') };
+  function show(which) {
+    Object.entries(screens).forEach(([k, el]) => el.classList.toggle('active', k === which));
+    if (which === 'team') { screens.team.scrollTop = 0; revealTeam(); }
+    if (which === 'cover') fit();
+  }
+  document.getElementById('view-team').addEventListener('click', () => show('team'));
+  document.getElementById('team-back').addEventListener('click', () => show('cover'));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && screens.team.classList.contains('active')) show('cover');
+  });
+</script>
+</body>
+</html>

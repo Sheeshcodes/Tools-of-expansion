@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ester's Pen — HTML Content & Asset Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#0d0c0b;
+    --panel:#161412;
+    --panel-2:#1d1a17;
+    --line:#2a2622;
+    --line-2:#363029;
+    --ink:#f3efe8;
+    --ink-dim:#a39c90;
+    --ink-faint:#6f685d;
+    --acid:#ccff00;
+    --acid-dim:#9fc400;
+    --warn:#ff7a45;
+    --warn-dim:#c45a30;
+    --radius:10px;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Bricolage Grotesque',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;
+    opacity:.025;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- App shell ---------- */
+  .app{display:grid;grid-template-rows:auto 1fr;height:100vh}
+
+  header{
+    display:flex;align-items:center;gap:18px;
+    padding:14px 20px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,var(--panel) 0%,var(--bg) 100%);
+  }
+  .brand{display:flex;align-items:center;gap:11px}
+  .glyph{
+    width:30px;height:30px;border-radius:7px;flex:none;position:relative;
+    background:var(--acid);
+    box-shadow:0 0 0 1px #000 inset, 0 6px 18px -6px var(--acid-dim);
+  }
+  .glyph::before,.glyph::after{
+    content:"";position:absolute;left:6px;right:6px;height:3px;border-radius:2px;background:#0d0c0b;
+  }
+  .glyph::before{top:9px}
+  .glyph::after{top:15px;right:11px}
+  .brand h1{font-size:16px;font-weight:700;letter-spacing:-.02em}
+  .brand .tag{font-family:var(--mono);font-size:10px;color:var(--ink-faint);letter-spacing:.08em;text-transform:uppercase;margin-top:1px}
+  .spacer{flex:1}
+  .file-meta{font-family:var(--mono);font-size:11px;color:var(--ink-dim);display:flex;align-items:center;gap:8px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--acid);box-shadow:0 0 8px var(--acid)}
+  .btn{
+    font-family:var(--mono);font-size:11.5px;font-weight:500;letter-spacing:.03em;
+    padding:9px 15px;border-radius:8px;border:1px solid var(--line-2);
+    background:var(--panel-2);color:var(--ink);cursor:pointer;
+    transition:.15s;display:inline-flex;align-items:center;gap:7px;text-transform:uppercase;
+  }
+  .btn:hover{border-color:var(--ink-faint);transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+  .btn.primary{background:var(--acid);color:#0d0c0b;border-color:var(--acid);font-weight:600}
+  .btn.primary:hover{box-shadow:0 8px 22px -8px var(--acid-dim)}
+  .btn.icon-btn{padding:9px 12px;font-size:13px;text-transform:none}
+  .hist-group{display:flex;gap:6px;align-items:center}
+  .hist-depth{font-family:var(--mono);font-size:10px;color:var(--ink-faint);min-width:46px;text-align:center;letter-spacing:.04em}
+
+  /* ---------- Body layout ---------- */
+  .main{display:grid;grid-template-columns:340px 1fr;min-height:0}
+  .sidebar{
+    border-right:1px solid var(--line);background:var(--panel);
+    display:flex;flex-direction:column;min-height:0;
+  }
+  .side-head{padding:16px 16px 0;border-bottom:1px solid var(--line)}
+  .side-head .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--ink-faint);text-transform:uppercase}
+  .count{font-size:26px;font-weight:700;letter-spacing:-.03em;margin-top:3px}
+  .count span{color:var(--acid)}
+  .count .asset-n{color:var(--warn)}
+  .search{
+    margin-top:12px;width:100%;background:var(--bg);border:1px solid var(--line-2);
+    border-radius:8px;padding:9px 11px;color:var(--ink);font-family:var(--mono);font-size:12px;
+  }
+  .search:focus{outline:none;border-color:var(--acid)}
+  .search::placeholder{color:var(--ink-faint)}
+  .baseurl{margin-top:0;width:300px;padding:7px 10px;font-size:11px}
+
+  .tabs{display:flex;gap:0;margin-top:14px}
+  .tab{
+    flex:1;font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+    padding:10px 4px;background:transparent;border:0;border-bottom:2px solid transparent;
+    color:var(--ink-faint);cursor:pointer;transition:.15s;
+  }
+  .tab:hover{color:var(--ink-dim)}
+  .tab.active{color:var(--ink)}
+  .tab.active.t-text{border-bottom-color:var(--acid)}
+  .tab.active.t-assets{border-bottom-color:var(--warn)}
+  .tab b{font-weight:600}
+  .tab.t-text b{color:var(--acid)}
+  .tab.t-assets b{color:var(--warn)}
+
+  .layers{flex:1;overflow-y:auto;padding:8px}
+  .layers::-webkit-scrollbar{width:9px}
+  .layers::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:6px;border:2px solid var(--panel)}
+
+  .layer{
+    border:1px solid transparent;border-radius:9px;padding:10px 11px;margin-bottom:5px;cursor:pointer;
+    transition:.12s;background:transparent;
+  }
+  .layer:hover{background:var(--panel-2)}
+  .layer.active{background:var(--panel-2);border-color:var(--acid)}
+  .layer-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+  .pill{
+    font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+    padding:2px 6px;border-radius:5px;background:var(--line);color:var(--acid);
+  }
+  .pill.orange{color:var(--warn)}
+  .path{font-family:var(--mono);font-size:9.5px;color:var(--ink-faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .layer textarea{
+    width:100%;resize:none;background:var(--bg);border:1px solid var(--line-2);border-radius:6px;
+    color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.45;padding:8px 9px;
+    overflow:hidden;
+  }
+  .layer textarea:focus{outline:none;border-color:var(--acid)}
+
+  /* ---------- Asset rows ---------- */
+  .asset{
+    border:1px solid transparent;border-radius:9px;padding:10px 11px;margin-bottom:5px;cursor:pointer;
+    transition:.12s;display:flex;gap:11px;align-items:flex-start;
+  }
+  .asset:hover{background:var(--panel-2)}
+  .asset.active{background:var(--panel-2);border-color:var(--warn)}
+  .asset.drag-hot{border-color:var(--warn);background:rgba(255,122,69,.07)}
+  .thumb{
+    width:48px;height:48px;flex:none;border-radius:8px;overflow:hidden;
+    background:repeating-conic-gradient(#221f1c 0% 25%, #191714 0% 50%) 0 0/14px 14px;
+    border:1px solid var(--line-2);display:grid;place-items:center;
+    font-size:18px;color:var(--ink-faint);
+  }
+  .thumb img{width:100%;height:100%;object-fit:contain;display:block}
+  .thumb svg{width:80%;height:80%}
+  .asset-info{flex:1;min-width:0}
+  .aname{
+    font-family:var(--mono);font-size:10.5px;color:var(--ink-dim);margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .aname .arrow{color:var(--warn);margin:0 3px}
+  .aname .newname{color:var(--ink)}
+  .abtns{display:flex;gap:6px;margin-top:8px}
+  .mini{
+    font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+    padding:5px 9px;border-radius:6px;border:1px solid var(--line-2);background:var(--bg);
+    color:var(--ink-dim);cursor:pointer;transition:.13s;
+  }
+  .mini:hover{color:var(--ink);border-color:var(--ink-faint)}
+  .mini.swap{color:var(--warn);border-color:rgba(255,122,69,.4)}
+  .mini.swap:hover{background:rgba(255,122,69,.1);border-color:var(--warn)}
+  .swapped-badge{
+    font-family:var(--mono);font-size:8.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+    padding:2px 5px;border-radius:4px;background:rgba(255,122,69,.14);color:var(--warn);
+    margin-left:auto;flex:none;
+  }
+
+  /* ---------- Stage ---------- */
+  .stage{display:flex;flex-direction:column;min-height:0;background:
+    radial-gradient(900px 500px at 70% -10%, rgba(204,255,0,.05), transparent 60%),var(--bg)}
+  .stage-bar{
+    display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:11px;color:var(--ink-dim);
+  }
+  .toggle{display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none}
+  .switch{width:34px;height:19px;border-radius:11px;background:var(--line-2);position:relative;transition:.18s}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--ink-dim);transition:.18s}
+  .toggle.on .switch{background:var(--acid)}
+  .toggle.on .switch::after{left:17px;background:#0d0c0b}
+  .frame-wrap{flex:1;padding:22px;min-height:0;display:flex}
+  .frame-card{
+    flex:1;border-radius:12px;overflow:hidden;border:1px solid var(--line-2);
+    box-shadow:0 30px 80px -40px #000;background:#fff;min-height:0;
+  }
+  iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+
+  /* ---------- Dropzone ---------- */
+  .drop{
+    flex:1;margin:22px;border:2px dashed var(--line-2);border-radius:16px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    text-align:center;transition:.18s;cursor:pointer;
+  }
+  .drop.hot{border-color:var(--acid);background:rgba(204,255,0,.04)}
+  .drop .big{font-size:30px;font-weight:700;letter-spacing:-.03em;max-width:460px}
+  .drop .big em{color:var(--acid);font-style:normal}
+  .drop .sub{font-family:var(--mono);font-size:12px;color:var(--ink-faint);max-width:420px;line-height:1.7}
+  .drop .icon{width:64px;height:64px;border-radius:14px;background:var(--panel-2);border:1px solid var(--line-2);
+    display:grid;place-items:center;font-family:var(--mono);color:var(--acid);font-size:22px;font-weight:700}
+  .empty-side{padding:30px 18px;font-family:var(--mono);font-size:12px;color:var(--ink-faint);line-height:1.8;text-align:center}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--acid);color:#0d0c0b;font-family:var(--mono);font-size:12px;font-weight:600;
+    padding:11px 18px;border-radius:9px;opacity:0;transition:.25s;pointer-events:none;z-index:200;
+    letter-spacing:.02em;box-shadow:0 12px 30px -10px var(--acid-dim);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="glyph"></div>
+      <div>
+        <h1>Ester's Pen</h1>
+        <div class="tag">HTML Content &amp; Asset Editor</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div id="fileMeta" class="file-meta hidden"><span class="dot"></span><span id="fileName">—</span></div>
+    <div class="hist-group">
+      <button id="undoBtn" class="btn icon-btn" disabled title="Undo (Ctrl/⌘+Z)">↶ Undo</button>
+      <span id="histDepth" class="hist-depth">0 / 0</span>
+      <button id="redoBtn" class="btn icon-btn" disabled title="Redo (Ctrl/⌘+Shift+Z or Ctrl+Y)">↷ Redo</button>
+    </div>
+    <button id="newBtn" class="btn hidden">↻ New file</button>
+    <button id="downloadBtn" class="btn primary" disabled>↓ Download HTML</button>
+  </header>
+
+  <div class="main">
+    <aside class="sidebar">
+      <div class="side-head">
+        <div class="lbl">Editable layers</div>
+        <div class="count"><span id="fieldCount">0</span> text · <span id="assetCount" class="asset-n">0</span> assets</div>
+        <input id="search" class="search hidden" placeholder="filter layers…" style="margin-bottom:0" />
+        <div class="tabs">
+          <button class="tab t-text active" id="tabText">Text <b id="tabTextN">0</b></button>
+          <button class="tab t-assets" id="tabAssets">Assets <b id="tabAssetsN">0</b></button>
+        </div>
+      </div>
+      <div id="layers" class="layers">
+        <div class="empty-side">No file loaded yet.<br/>Drop an HTML file to detect editable text.</div>
+      </div>
+      <div id="assets" class="layers hidden">
+        <div class="empty-side">No file loaded yet.<br/>Images, icons &amp; video appear here.</div>
+      </div>
+    </aside>
+
+    <section class="stage">
+      <div id="stageBar" class="stage-bar hidden">
+        <div class="toggle on" id="hlToggle"><div class="switch"></div> Highlight</div>
+        <div class="toggle on" id="interactiveToggle"><div class="switch"></div> Interactive</div>
+        <input id="baseUrl" class="search baseurl" placeholder="base url for assets (e.g. https://site.com/)" />
+        <div class="spacer" style="flex:1"></div>
+        <div id="modeHint">Live mode: click components to interact · double-click text to edit</div>
+      </div>
+
+      <div id="dropzone" class="drop">
+        <div class="icon">&lt;/&gt;</div>
+        <div class="big">Drop an <em>HTML file</em> to start editing content</div>
+        <div class="sub">Ester's Pen finds every text element, image, icon and video — edit copy in a live preview, swap assets by uploading replacements, undo with ⌘Z, and export clean HTML (zipped with an updated assets folder when you've swapped files).</div>
+        <button class="btn primary">Choose file</button>
+      </div>
+
+      <div id="frameWrap" class="frame-wrap hidden">
+        <div class="frame-card"><iframe id="preview" sandbox="allow-same-origin"></iframe></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<input id="fileInput" type="file" accept=".html,.htm,text/html" class="hidden" />
+<input id="assetFileInput" type="file" class="hidden" />
+<div id="toast" class="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var SKIP = new Set(['SCRIPT','STYLE','NOSCRIPT','TITLE','META','LINK','HEAD','HTML','BR','HR','IMG','SVG','PATH','CANVAS','IFRAME','INPUT','TEXTAREA','SELECT','OPTION','VIDEO','AUDIO','SOURCE','TRACK']);
+  var CMS_ATTR = 'data-ll-id';
+  var ASSET_ATTR = 'data-ll-asset';
+  var STYLE_ID = '__layerleaf_style';
+  var MAX_HISTORY = 200;                 // industry-standard deep undo
+  var COALESCE_MS = 900;                 // keystrokes within this window merge into one undo step
+
+  var state = { doc:null, fileName:'', highlight:true, interactive:true, baseUrl:'', exportVersion:0, layers:[], assets:[], tab:'text' };
+
+  // ---- undo / redo ----
+  var history = [];        // entries: {type:'text',layerId,before,after,t,closed} | {type:'asset',assetId,label,before,after}
+  var hIndex = -1;         // points at last applied entry
+
+  function truncateRedo(){ if(hIndex < history.length-1) history.splice(hIndex+1); }
+  function pushHistory(entry){
+    truncateRedo();
+    history.push(entry);
+    if(history.length > MAX_HISTORY) history.shift();
+    hIndex = history.length-1;
+    updateHistoryUI();
+  }
+  function recordText(layerId, before, after){
+    if(before === after) return;
+    var now = Date.now();
+    truncateRedo();
+    var last = history[hIndex];
+    if(last && last.type==='text' && last.layerId===layerId && !last.closed && (now - last.t) < COALESCE_MS){
+      last.after = after; last.t = now; updateHistoryUI(); return;
+    }
+    pushHistory({type:'text', layerId:layerId, before:before, after:after, t:now});
+  }
+  function closeCoalescing(){
+    var last = history[hIndex];
+    if(last && last.type==='text') last.closed = true;
+  }
+  function undo(){
+    if(hIndex < 0){ showToast('Nothing to undo'); return; }
+    var e = history[hIndex--];
+    if(e.type==='text'){ applyText(e.layerId, e.before); markActive(e.layerId, true); showToast('↶ Undid text edit'); }
+    else { var rec = findAsset(e.assetId); if(rec){ applyAssetState(rec, e.before); markAssetActive(e.assetId, true); } showToast('↶ Undid '+e.label); }
+    updateHistoryUI();
+  }
+  function redo(){
+    if(hIndex >= history.length-1){ showToast('Nothing to redo'); return; }
+    var e = history[++hIndex];
+    if(e.type==='text'){ applyText(e.layerId, e.after); markActive(e.layerId, true); showToast('↷ Redid text edit'); }
+    else { var rec = findAsset(e.assetId); if(rec){ applyAssetState(rec, e.after); markAssetActive(e.assetId, true); } showToast('↷ Redid '+e.label); }
+    updateHistoryUI();
+  }
+  function resetHistory(){ history = []; hIndex = -1; updateHistoryUI(); }
+  function updateHistoryUI(){
+    undoBtn.disabled = hIndex < 0;
+    redoBtn.disabled = hIndex >= history.length-1;
+    histDepth.textContent = (hIndex+1) + ' / ' + history.length;
+  }
+
+  // ---- element refs ----
+  var $ = function(id){ return document.getElementById(id); };
+  var dropzone=$('dropzone'), fileInput=$('fileInput'), preview=$('preview'),
+      frameWrap=$('frameWrap'), stageBar=$('stageBar'), layersEl=$('layers'), assetsEl=$('assets'),
+      fieldCount=$('fieldCount'), assetCount=$('assetCount'), searchEl=$('search'), downloadBtn=$('downloadBtn'),
+      newBtn=$('newBtn'), fileMeta=$('fileMeta'), fileName=$('fileName'),
+      hlToggle=$('hlToggle'), toast=$('toast'),
+      interactiveToggle=$('interactiveToggle'), baseUrlEl=$('baseUrl'), modeHint=$('modeHint'),
+      undoBtn=$('undoBtn'), redoBtn=$('redoBtn'), histDepth=$('histDepth'),
+      tabText=$('tabText'), tabAssets=$('tabAssets'), tabTextN=$('tabTextN'), tabAssetsN=$('tabAssetsN'),
+      assetFileInput=$('assetFileInput');
+
+  // ---- helpers ----
+  function hasDirectText(el){
+    for(var i=0;i<el.childNodes.length;i++){
+      var n=el.childNodes[i];
+      if(n.nodeType===3 && n.textContent.replace(/\s+/g,' ').trim().length) return true;
+    }
+    return false;
+  }
+  function isSvgScoped(el){ return !!(el.namespaceURI && el.namespaceURI.indexOf('svg') > -1); }
+  function buildPath(el){
+    var parts=[], cur=el, depth=0;
+    while(cur && cur.nodeType===1 && cur.tagName!=='BODY' && depth<4){
+      var seg=cur.tagName.toLowerCase();
+      if(cur.id) seg+='#'+cur.id;
+      else if(cur.className && typeof cur.className==='string'){
+        var c=cur.className.trim().split(/\s+/)[0];
+        if(c) seg+='.'+c;
+      }
+      parts.unshift(seg); cur=cur.parentElement; depth++;
+    }
+    return parts.join(' › ');
+  }
+  function snippet(t){ t=t.replace(/\s+/g,' ').trim(); return t.length>90?t.slice(0,90)+'…':t; }
+  function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); clearTimeout(showToast._t); showToast._t=setTimeout(function(){toast.classList.remove('show');},1900); }
+  function baseName(src){
+    if(!src) return '';
+    if(/^data:/i.test(src)) return '(embedded data)';
+    var clean = src.split('#')[0].split('?')[0];
+    var parts = clean.split('/');
+    return parts[parts.length-1] || clean;
+  }
+  function sanitizeName(n){
+    n = n || 'asset';
+    var dot = n.lastIndexOf('.');
+    var stem = dot > 0 ? n.slice(0, dot) : n;
+    var ext  = dot > 0 ? n.slice(dot+1) : '';
+    stem = stem.replace(/[^a-zA-Z0-9._-]+/g,'-').replace(/-+/g,'-').replace(/^[-.]+|[-.]+$/g,'') || 'asset';
+    ext  = ext.replace(/[^a-zA-Z0-9]+/g,'').toLowerCase();
+    return ext ? stem + '.' + ext : stem;
+  }
+  function findLayer(id){ for(var i=0;i<state.layers.length;i++){ if(state.layers[i].id===id) return state.layers[i]; } return null; }
+  function findAsset(id){ for(var i=0;i<state.assets.length;i++){ if(state.assets[i].id===id) return state.assets[i]; } return null; }
+
+  // ---- core: load an html string (parse the model, then render) ----
+  function loadHTML(htmlString, name){
+    state.fileName = name || 'document.html';
+    var parser = new DOMParser();
+    var doc = parser.parseFromString(htmlString, 'text/html');
+
+    // tag editable text elements
+    var all = doc.body ? doc.body.querySelectorAll('*') : [];
+    var idx = 0;
+    state.layers = [];
+    for(var i=0;i<all.length;i++){
+      var el = all[i];
+      if(SKIP.has(el.tagName)) continue;
+      if(isSvgScoped(el)) continue;            // don't surface svg innards as text layers
+      if(!hasDirectText(el)) continue;
+      var id = 'll-' + (idx++);
+      el.setAttribute(CMS_ATTR, id);
+      state.layers.push({ id:id, tag:el.tagName.toLowerCase(), path:buildPath(el), text:el.textContent });
+    }
+
+    // tag swappable assets
+    state.assets = [];
+    var aIdx = 0;
+    function addAsset(node, kind, src, extra){
+      var aid = 'la-' + (aIdx++);
+      node.setAttribute(ASSET_ATTR, aid);
+      var rec = {
+        id: aid, kind: kind, path: buildPath(node),
+        origSrc: src || '',
+        cur: { src: src || '', srcset: (kind==='img' ? (node.getAttribute('srcset')||'') : ''), html: '', swapped: null }
+      };
+      if(kind==='svg') rec.cur.html = node.outerHTML;
+      if(extra) Object.assign(rec, extra);
+      state.assets.push(rec);
+      return rec;
+    }
+    if(doc.body){
+      doc.body.querySelectorAll('img').forEach(function(n){ if(!isSvgScoped(n)) addAsset(n, 'img', n.getAttribute('src')||''); });
+      doc.body.querySelectorAll('svg').forEach(function(n){ if(n.parentElement && n.parentElement.closest('svg')) return; addAsset(n, 'svg', ''); });
+      doc.body.querySelectorAll('video').forEach(function(n){
+        if(n.getAttribute('src')) addAsset(n, 'video', n.getAttribute('src'));
+        if(n.getAttribute('poster')){
+          // poster lives on the same node — give it its own record via a wrapper attr scheme
+          var aid = 'la-' + (aIdx++);
+          n.setAttribute('data-ll-asset-poster', aid);
+          state.assets.push({ id:aid, kind:'poster', path:buildPath(n), origSrc:n.getAttribute('poster'),
+            cur:{ src:n.getAttribute('poster'), srcset:'', html:'', swapped:null } });
+        }
+      });
+      doc.body.querySelectorAll('audio[src]').forEach(function(n){ addAsset(n, 'audio', n.getAttribute('src')); });
+      doc.body.querySelectorAll('video source, audio source').forEach(function(n){
+        if(n.getAttribute('src')) addAsset(n, 'source', n.getAttribute('src'), { mediaKind: n.parentElement ? n.parentElement.tagName.toLowerCase() : 'video' });
+      });
+    }
+
+    state.doc = doc;
+    state.exportVersion = 0;
+    resetHistory();
+
+    renderPreview();
+
+    // UI swap
+    dropzone.classList.add('hidden');
+    frameWrap.classList.remove('hidden');
+    stageBar.classList.remove('hidden');
+    fileMeta.classList.remove('hidden');
+    newBtn.classList.remove('hidden');
+    searchEl.classList.remove('hidden');
+    fileName.textContent = state.fileName;
+    downloadBtn.disabled = false;
+    renderLayers();
+    renderAssets();
+    updateDownloadLabel();
+  }
+
+  // ---- (re)build the preview iframe from the current model + mode flags ----
+  function renderPreview(){
+    if(!state.doc) return;
+    var parser = new DOMParser();
+    var previewDoc = parser.parseFromString('<!DOCTYPE html>'+state.doc.documentElement.outerHTML, 'text/html');
+    var head = previewDoc.head || previewDoc.documentElement;
+
+    if(state.baseUrl){
+      var base = previewDoc.createElement('base'); base.href = state.baseUrl;
+      head.insertBefore(base, head.firstChild);
+    }
+
+    var style = previewDoc.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent =
+      '['+CMS_ATTR+']{transition:outline-color .12s,background .12s;border-radius:2px}'+
+      'body.ll-hl ['+CMS_ATTR+']{outline:1px dashed rgba(204,170,0,.5)}'+
+      'body.ll-hl ['+CMS_ATTR+']:hover{outline:2px solid #ccff00;outline-offset:1px;background:rgba(204,255,0,.10);cursor:text}'+
+      '['+CMS_ATTR+'][contenteditable="true"]{outline:2px solid #ccff00 !important;outline-offset:1px;background:rgba(204,255,0,.12)}'+
+      'body.ll-hl ['+ASSET_ATTR+'],body.ll-hl [data-ll-asset-poster]{outline:1px dashed rgba(255,122,69,.55)}'+
+      'body.ll-hl ['+ASSET_ATTR+']:hover{outline:2px solid #ff7a45;outline-offset:1px}'+
+      /* active-field spotlight: shown while its sidebar field is focused, regardless of the Highlight toggle */
+      '@keyframes ll-pulse{0%{box-shadow:0 0 0 14px rgba(204,255,0,.32)}100%{box-shadow:0 0 0 4px rgba(204,255,0,.14)}}'+
+      '@keyframes ll-pulse-a{0%{box-shadow:0 0 0 14px rgba(255,122,69,.34)}100%{box-shadow:0 0 0 4px rgba(255,122,69,.16)}}'+
+      '['+CMS_ATTR+'].ll-editing{outline:2px solid #ccff00 !important;outline-offset:2px;background:rgba(204,255,0,.16) !important;'+
+        'box-shadow:0 0 0 4px rgba(204,255,0,.14);animation:ll-pulse .45s ease-out 1;border-radius:3px}'+
+      '['+ASSET_ATTR+'].ll-editing-asset,[data-ll-asset-poster].ll-editing-asset{outline:2px solid #ff7a45 !important;outline-offset:2px;'+
+        'box-shadow:0 0 0 4px rgba(255,122,69,.16);animation:ll-pulse-a .45s ease-out 1;border-radius:3px}';
+    head.appendChild(style);
+
+    if(!state.interactive){
+      var pAll = previewDoc.body.querySelectorAll('['+CMS_ATTR+']');
+      for(var j=0;j<pAll.length;j++){
+        pAll[j].setAttribute('contenteditable','true');
+        pAll[j].setAttribute('spellcheck','false');
+      }
+    }
+    if(state.highlight) previewDoc.body.classList.add('ll-hl');
+
+    preview.setAttribute('sandbox', state.interactive ? 'allow-scripts allow-same-origin' : 'allow-same-origin');
+    preview.onload = wirePreview;
+    preview.srcdoc = '<!DOCTYPE html>'+previewDoc.documentElement.outerHTML;
+  }
+
+  // ---- wire up live editing inside the iframe ----
+  function syncFromNode(node){
+    var id = node.getAttribute(CMS_ATTR);
+    var L = findLayer(id);
+    var newVal = node.textContent;
+    if(L && L.text !== newVal) recordText(id, L.text, newVal);
+    var ta = layersEl.querySelector('textarea[data-for="'+id+'"]');
+    if(ta){ ta.value = newVal; autosize(ta); }
+    var mNode = state.doc && state.doc.querySelector('['+CMS_ATTR+'="'+id+'"]');
+    if(mNode) mNode.textContent = newVal;
+    if(L) L.text = newVal;
+  }
+  function wirePreview(){
+    var pdoc = preview.contentDocument;
+    if(!pdoc) return;
+    var nodes = pdoc.querySelectorAll('['+CMS_ATTR+']');
+    nodes.forEach(function(node){
+      node.addEventListener('input', function(){ syncFromNode(node); });
+      if(state.interactive){
+        node.setAttribute('title','Double-click to edit');
+        node.addEventListener('dblclick', function(e){
+          e.stopPropagation(); e.preventDefault();
+          node.setAttribute('contenteditable','true');
+          node.setAttribute('spellcheck','false');
+          node.focus();
+          markActive(node.getAttribute(CMS_ATTR), false);
+        });
+        node.addEventListener('blur', function(){ node.removeAttribute('contenteditable'); closeCoalescing(); clearSpotlight(); });
+      } else {
+        node.addEventListener('focus', function(){ markActive(node.getAttribute(CMS_ATTR), false); });
+        node.addEventListener('blur', function(){ closeCoalescing(); clearSpotlight(); });
+      }
+    });
+    // asset click-to-locate: clicking an asset in the preview selects it in the sidebar
+    pdoc.querySelectorAll('['+ASSET_ATTR+']').forEach(function(node){
+      node.addEventListener('click', function(e){
+        if(!state.highlight) return;
+        var aid = node.getAttribute(ASSET_ATTR);
+        switchTab('assets');
+        markAssetActive(aid, false);
+      });
+    });
+    // undo/redo + save shortcuts must also work while focus is inside the iframe
+    pdoc.addEventListener('keydown', hotkeys, true);
+  }
+
+  // ---- applying state (used by user actions AND undo/redo) ----
+  function applyText(id, val){
+    var L = findLayer(id); if(L) L.text = val;
+    var ta = layersEl.querySelector('textarea[data-for="'+id+'"]');
+    if(ta){ ta.value = val; autosize(ta); }
+    var pdoc = preview.contentDocument;
+    var node = pdoc && pdoc.querySelector('['+CMS_ATTR+'="'+id+'"]');
+    if(node) node.textContent = val;
+    var mNode = state.doc && state.doc.querySelector('['+CMS_ATTR+'="'+id+'"]');
+    if(mNode) mNode.textContent = val;
+  }
+
+  function assetNodeIn(root, rec){
+    if(rec.kind === 'poster') return root.querySelector('[data-ll-asset-poster="'+rec.id+'"]');
+    return root.querySelector('['+ASSET_ATTR+'="'+rec.id+'"]');
+  }
+  function writeAssetToDoc(root, rec, st){
+    var node = assetNodeIn(root, rec);
+    if(!node) return;
+    if(rec.kind === 'svg'){
+      var tmp = root.createElement('div');
+      tmp.innerHTML = st.html;
+      var fresh = tmp.firstElementChild;
+      if(fresh){ fresh.setAttribute(ASSET_ATTR, rec.id); node.replaceWith(fresh); }
+      return;
+    }
+    if(rec.kind === 'poster'){ node.setAttribute('poster', st.src); return; }
+    node.setAttribute('src', st.src);
+    if(rec.kind === 'img'){
+      if(st.srcset) node.setAttribute('srcset', st.srcset); else node.removeAttribute('srcset');
+    }
+    if(rec.kind === 'source'){
+      if(st.type) node.setAttribute('type', st.type);
+      var media = node.parentElement; if(media && media.load) try{ media.load(); }catch(_){}
+    }
+    if((rec.kind === 'video' || rec.kind === 'audio') && node.load) try{ node.load(); }catch(_){}
+  }
+  function applyAssetState(rec, st){
+    rec.cur = JSON.parse(JSON.stringify(st));
+    if(state.doc) writeAssetToDoc(state.doc, rec, st);
+    var pdoc = preview.contentDocument;
+    if(pdoc) writeAssetToDoc(pdoc, rec, st);
+    renderAssets(searchEl.value.toLowerCase().trim());
+    updateDownloadLabel();
+  }
+  function captureAssetState(rec){ return JSON.parse(JSON.stringify(rec.cur)); }
+
+  // ---- asset replacement ----
+  var pendingReplace = null;
+  function acceptFor(rec){
+    if(rec.kind==='img' || rec.kind==='poster') return 'image/*';
+    if(rec.kind==='svg') return '.svg,image/svg+xml';
+    if(rec.kind==='video') return 'video/*';
+    if(rec.kind==='audio') return 'audio/*';
+    if(rec.kind==='source') return (rec.mediaKind==='audio'?'audio/*':'video/*');
+    return '*/*';
+  }
+  function startReplace(rec){
+    pendingReplace = rec;
+    assetFileInput.accept = acceptFor(rec);
+    assetFileInput.value = '';
+    assetFileInput.click();
+  }
+  function uniqueExportPath(desired, selfId){
+    var used = {};
+    state.assets.forEach(function(a){
+      if(a.id!==selfId && a.cur.swapped && a.cur.swapped.exportPath) used[a.cur.swapped.exportPath]=1;
+    });
+    if(!used[desired]) return desired;
+    var dot = desired.lastIndexOf('.');
+    var stem = dot>0?desired.slice(0,dot):desired, ext = dot>0?desired.slice(dot):'';
+    var n=2;
+    while(used[stem+'-'+n+ext]) n++;
+    return stem+'-'+n+ext;
+  }
+  function computeExportPath(rec, uploadedName){
+    var name = sanitizeName(uploadedName);
+    var src = rec.origSrc || '';
+    var dir = 'assets/';
+    if(src && !/^(https?:|data:|blob:|\/\/)/i.test(src)){
+      var clean = src.split('#')[0].split('?')[0];
+      var slash = clean.lastIndexOf('/');
+      dir = slash > -1 ? clean.slice(0, slash+1) : '';
+    }
+    return uniqueExportPath(dir + name, rec.id);
+  }
+  function handleAssetFile(rec, file){
+    if(!file || !rec) return;
+    if(file.size > 50*1024*1024) showToast('⚠ Large file ('+Math.round(file.size/1048576)+'MB) — preview may be slow');
+
+    if(rec.kind === 'svg'){
+      var r = new FileReader();
+      r.onload = function(e){
+        var txt = e.target.result;
+        var sdoc = new DOMParser().parseFromString(txt, 'image/svg+xml');
+        var root = sdoc.documentElement;
+        if(!root || root.tagName.toLowerCase()!=='svg' || sdoc.querySelector('parsererror')){
+          showToast('⚠ That file is not a valid SVG'); return;
+        }
+        // preserve the original icon's sizing & hooks if the new one doesn't define them
+        var orig = assetNodeIn(state.doc, rec);
+        ['class','width','height','style'].forEach(function(attr){
+          if(orig && orig.getAttribute(attr) && !root.getAttribute(attr)) root.setAttribute(attr, orig.getAttribute(attr));
+        });
+        root.setAttribute(ASSET_ATTR, rec.id);
+        var html = new XMLSerializer().serializeToString(root);
+        var before = captureAssetState(rec);
+        var after = { src:'', srcset:'', html:html, swapped:{ name:file.name, dataURL:'', exportPath:'', inline:true } };
+        applyAssetState(rec, after);
+        pushHistory({type:'asset', assetId:rec.id, label:'icon swap', before:before, after:after});
+        showToast('✓ Icon replaced — inline SVG updated');
+      };
+      r.readAsText(file);
+      return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var dataURL = e.target.result;
+      var exportPath = computeExportPath(rec, file.name);
+      var before = captureAssetState(rec);
+      var after = {
+        src: dataURL, srcset: '',
+        type: file.type || '',
+        html: '',
+        swapped: { name:file.name, dataURL:dataURL, exportPath:exportPath, mime:file.type||'' }
+      };
+      applyAssetState(rec, after);
+      pushHistory({type:'asset', assetId:rec.id, label:(rec.kind==='video'||rec.kind==='source'||rec.kind==='audio'?'media swap':'image swap'), before:before, after:after});
+      showToast('✓ Replaced — will export to '+exportPath);
+    };
+    reader.readAsDataURL(file);
+  }
+  function revertAsset(rec){
+    var before = captureAssetState(rec);
+    if(!before.swapped){ showToast('Already original'); return; }
+    var after;
+    if(rec.kind === 'svg'){
+      // rebuild original markup from the pristine record taken at load
+      after = { src:'', srcset:'', html: rec.origHtml || before.html, swapped:null };
+    } else {
+      after = { src: rec.origSrc, srcset: rec.origSrcset || '', html:'', swapped:null };
+    }
+    applyAssetState(rec, after);
+    pushHistory({type:'asset', assetId:rec.id, label:'revert to original', before:before, after:after});
+    showToast('✓ Reverted to original');
+  }
+
+  // ---- side panel: text ----
+  function renderLayers(filter){
+    layersEl.innerHTML='';
+    var shown=0;
+    state.layers.forEach(function(L){
+      if(filter && L.text.toLowerCase().indexOf(filter)<0 && L.path.toLowerCase().indexOf(filter)<0) return;
+      shown++;
+      var row=document.createElement('div'); row.className='layer'; row.dataset.id=L.id;
+      var top=document.createElement('div'); top.className='layer-top';
+      var pill=document.createElement('span'); pill.className='pill'; pill.textContent=L.tag;
+      var path=document.createElement('span'); path.className='path'; path.textContent=L.path||'body';
+      top.appendChild(pill); top.appendChild(path);
+      var ta=document.createElement('textarea'); ta.value=L.text; ta.dataset.for=L.id; ta.rows=1;
+      row.appendChild(top); row.appendChild(ta); layersEl.appendChild(row);
+      autosize(ta);
+
+      ta.addEventListener('input', function(){
+        autosize(ta);
+        recordText(L.id, L.text, ta.value);
+        var pdoc=preview.contentDocument;
+        var node=pdoc && pdoc.querySelector('['+CMS_ATTR+'="'+L.id+'"]');
+        if(node){ node.textContent=ta.value; }
+        var mNode = state.doc && state.doc.querySelector('['+CMS_ATTR+'="'+L.id+'"]');
+        if(mNode) mNode.textContent = ta.value;
+        L.text=ta.value;
+        ensureNodeVisible(L.id);
+      });
+      ta.addEventListener('focus', function(){ markActive(L.id, true); });
+      ta.addEventListener('blur', function(){ closeCoalescing(); clearSpotlight(); });
+      row.addEventListener('click', function(e){ if(e.target!==ta){ ta.focus(); scrollToNode(L.id);} });
+    });
+    fieldCount.textContent=shown;
+    tabTextN.textContent=shown;
+  }
+
+  // ---- side panel: assets ----
+  var KIND_ICON = { img:'🖼', svg:'✦', video:'🎞', audio:'♫', source:'🎞', poster:'🖼' };
+  function renderAssets(filter){
+    assetsEl.innerHTML='';
+    var shown=0;
+    if(!state.assets.length){
+      assetsEl.innerHTML='<div class="empty-side">No images, icons or video<br/>found in this file.</div>';
+      assetCount.textContent='0'; tabAssetsN.textContent='0';
+      return;
+    }
+    state.assets.forEach(function(rec){
+      var label = rec.kind==='svg' ? 'inline svg' : baseName(rec.origSrc);
+      var hay = (label+' '+rec.path+' '+rec.kind).toLowerCase();
+      if(filter && hay.indexOf(filter)<0) return;
+      shown++;
+
+      var row=document.createElement('div'); row.className='asset'; row.dataset.aid=rec.id;
+
+      var thumb=document.createElement('div'); thumb.className='thumb';
+      if(rec.kind==='svg'){
+        thumb.innerHTML = rec.cur.html || '';
+        if(!thumb.firstElementChild) thumb.textContent = KIND_ICON.svg;
+      } else if(rec.kind==='img' || rec.kind==='poster'){
+        var im=document.createElement('img');
+        im.src = rec.cur.src || '';
+        im.onerror=function(){ thumb.textContent=KIND_ICON[rec.kind]; };
+        thumb.appendChild(im);
+      } else {
+        thumb.textContent = KIND_ICON[rec.kind] || '◳';
+      }
+
+      var info=document.createElement('div'); info.className='asset-info';
+      var top=document.createElement('div'); top.className='layer-top'; top.style.marginBottom='2px';
+      var pill=document.createElement('span'); pill.className='pill orange';
+      pill.textContent = rec.kind==='source' ? (rec.mediaKind||'video')+' src' : rec.kind;
+      var path=document.createElement('span'); path.className='path'; path.textContent=rec.path||'body';
+      top.appendChild(pill); top.appendChild(path);
+      if(rec.cur.swapped){
+        var badge=document.createElement('span'); badge.className='swapped-badge'; badge.textContent='swapped';
+        top.appendChild(badge);
+      }
+
+      var nm=document.createElement('div'); nm.className='aname';
+      if(rec.cur.swapped && !rec.cur.swapped.inline){
+        nm.innerHTML='<span>'+escapeHtml(label)+'</span><span class="arrow">→</span><span class="newname">'+escapeHtml(rec.cur.swapped.exportPath)+'</span>';
+      } else if(rec.cur.swapped && rec.cur.swapped.inline){
+        nm.innerHTML='<span>'+escapeHtml(label)+'</span><span class="arrow">→</span><span class="newname">'+escapeHtml(rec.cur.swapped.name)+' (inlined)</span>';
+      } else {
+        nm.textContent = label || '—';
+      }
+
+      var btns=document.createElement('div'); btns.className='abtns';
+      var rep=document.createElement('button'); rep.className='mini swap'; rep.textContent='⇄ Replace';
+      rep.addEventListener('click', function(e){ e.stopPropagation(); startReplace(rec); });
+      btns.appendChild(rep);
+      if(rec.cur.swapped){
+        var rev=document.createElement('button'); rev.className='mini'; rev.textContent='↺ Revert';
+        rev.addEventListener('click', function(e){ e.stopPropagation(); revertAsset(rec); });
+        btns.appendChild(rev);
+      }
+
+      info.appendChild(top); info.appendChild(nm); info.appendChild(btns);
+      row.appendChild(thumb); row.appendChild(info);
+      assetsEl.appendChild(row);
+
+      row.addEventListener('click', function(){ markAssetActive(rec.id, true); });
+
+      // drag a file straight onto the row to replace
+      ['dragenter','dragover'].forEach(function(ev){
+        row.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); row.classList.add('drag-hot'); });
+      });
+      ['dragleave','drop'].forEach(function(ev){
+        row.addEventListener(ev, function(e){ e.preventDefault(); e.stopPropagation(); row.classList.remove('drag-hot'); });
+      });
+      row.addEventListener('drop', function(e){
+        var f=e.dataTransfer.files && e.dataTransfer.files[0];
+        if(f) handleAssetFile(rec, f);
+      });
+    });
+    assetCount.textContent=state.assets.length;
+    tabAssetsN.textContent=shown;
+  }
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  function autosize(ta){ ta.style.height='auto'; ta.style.height=(ta.scrollHeight)+'px'; }
+
+  function markActive(id, doScroll){
+    var rows=layersEl.querySelectorAll('.layer');
+    rows.forEach(function(r){ r.classList.toggle('active', r.dataset.id===id); });
+    var active=layersEl.querySelector('.layer.active');
+    if(active) active.scrollIntoView({block:'nearest'});
+    spotlight(id, 'text');
+    if(doScroll) scrollToNode(id);
+  }
+  function markAssetActive(aid, doScroll){
+    var rows=assetsEl.querySelectorAll('.asset');
+    rows.forEach(function(r){ r.classList.toggle('active', r.dataset.aid===aid); });
+    var active=assetsEl.querySelector('.asset.active');
+    if(active) active.scrollIntoView({block:'nearest'});
+    spotlight(aid, 'asset');
+    if(doScroll) scrollToAsset(aid);
+  }
+
+  // ---- canvas spotlight: highlight the node whose field is being edited ----
+  function clearSpotlight(){
+    var pdoc=preview.contentDocument; if(!pdoc) return;
+    pdoc.querySelectorAll('.ll-editing,.ll-editing-asset').forEach(function(n){
+      n.classList.remove('ll-editing'); n.classList.remove('ll-editing-asset');
+    });
+  }
+  function spotlight(id, kind){
+    var pdoc=preview.contentDocument; if(!pdoc) return;
+    clearSpotlight();
+    var node = kind==='asset'
+      ? (pdoc.querySelector('['+ASSET_ATTR+'="'+id+'"]') || pdoc.querySelector('[data-ll-asset-poster="'+id+'"]'))
+      : pdoc.querySelector('['+CMS_ATTR+'="'+id+'"]');
+    if(!node) return;
+    node.classList.add(kind==='asset' ? 'll-editing-asset' : 'll-editing');
+  }
+  // keep the spotlit node in view while typing, without re-centering on every keystroke
+  function ensureNodeVisible(id){
+    var pdoc=preview.contentDocument;
+    var node=pdoc && pdoc.querySelector('['+CMS_ATTR+'="'+id+'"]');
+    if(!node || !node.getBoundingClientRect) return;
+    var r=node.getBoundingClientRect();
+    var h=pdoc.defaultView ? pdoc.defaultView.innerHeight : 0;
+    if(r.bottom < 0 || r.top > h) node.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
+  function scrollToNode(id){
+    var pdoc=preview.contentDocument;
+    var node=pdoc && pdoc.querySelector('['+CMS_ATTR+'="'+id+'"]');
+    if(!node) return;
+    if(pdoc.defaultView && isHiddenCS(pdoc.defaultView.getComputedStyle(node))) revealChainFor(node, pdoc);
+    if(node.scrollIntoView) node.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+  function scrollToAsset(aid){
+    var pdoc=preview.contentDocument;
+    if(!pdoc) return;
+    var node=pdoc.querySelector('['+ASSET_ATTR+'="'+aid+'"]') || pdoc.querySelector('[data-ll-asset-poster="'+aid+'"]');
+    if(!node) return;
+    if(pdoc.defaultView && isHiddenCS(pdoc.defaultView.getComputedStyle(node))) revealChainFor(node, pdoc);
+    if(node.scrollIntoView) node.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
+  // ---- reveal hidden / collapsed content so it can be edited in place ----
+  var SAVE_ATTR='data-ll-saved';
+  function isHiddenCS(cs){
+    return cs.display==='none' || cs.visibility==='hidden' || parseFloat(cs.opacity)===0 ||
+           parseFloat(cs.maxHeight)===0 || (cs.height==='0px' && cs.overflow!=='visible');
+  }
+  function forceVisible(el){
+    if(el.hasAttribute(SAVE_ATTR)) return;
+    el.setAttribute(SAVE_ATTR, el.getAttribute('style')||'__none__');
+    el.style.setProperty('display','revert','important');
+    el.style.setProperty('visibility','visible','important');
+    el.style.setProperty('opacity','1','important');
+    el.style.setProperty('max-height','none','important');
+    el.style.setProperty('height','auto','important');
+    el.style.setProperty('overflow','visible','important');
+    el.style.setProperty('transform','none','important');
+    el.style.setProperty('position','static','important');
+    el.removeAttribute('hidden');
+    if(el.tagName==='DETAILS') el.setAttribute('open','');
+  }
+  function revealChainFor(node, pdoc){
+    var view=pdoc.defaultView, cur=node;
+    while(cur && cur!==pdoc.body && cur.nodeType===1){
+      if(isHiddenCS(view.getComputedStyle(cur))) forceVisible(cur);
+      cur=cur.parentElement;
+    }
+  }
+  function restoreReveal(root){
+    var saved=root.querySelectorAll('['+SAVE_ATTR+']');
+    saved.forEach(function(el){
+      var s=el.getAttribute(SAVE_ATTR);
+      if(s==='__none__') el.removeAttribute('style'); else el.setAttribute('style', s);
+      el.removeAttribute(SAVE_ATTR);
+    });
+  }
+
+  // ---- export ----
+  function swappedFileAssets(){
+    return state.assets.filter(function(a){ return a.cur.swapped && !a.cur.swapped.inline; });
+  }
+  function updateDownloadLabel(){
+    downloadBtn.textContent = swappedFileAssets().length ? '↓ Download ZIP' : '↓ Download HTML';
+  }
+  function buildExportHTML(){
+    if(!state.doc) return null;
+    // the model doc is the source of truth: every text edit and asset swap is synced into it
+    var clone=state.doc.documentElement.cloneNode(true);
+    var s=clone.querySelector('#'+STYLE_ID); if(s) s.remove();
+    restoreReveal(clone);
+
+    // rewrite swapped asset srcs from preview data-URLs to their exported asset-folder paths
+    state.assets.forEach(function(rec){
+      if(!(rec.cur.swapped && !rec.cur.swapped.inline)) return;
+      var node = rec.kind==='poster'
+        ? clone.querySelector('[data-ll-asset-poster="'+rec.id+'"]')
+        : clone.querySelector('['+ASSET_ATTR+'="'+rec.id+'"]');
+      if(!node) return;
+      if(rec.kind==='poster') node.setAttribute('poster', rec.cur.swapped.exportPath);
+      else node.setAttribute('src', rec.cur.swapped.exportPath);
+    });
+
+    // strip all editing attributes
+    clone.querySelectorAll('['+CMS_ATTR+']').forEach(function(n){
+      n.removeAttribute(CMS_ATTR);
+      n.removeAttribute('contenteditable');
+      n.removeAttribute('spellcheck');
+      n.removeAttribute('title');
+    });
+    clone.querySelectorAll('['+ASSET_ATTR+']').forEach(function(n){ n.removeAttribute(ASSET_ATTR); });
+    clone.querySelectorAll('[data-ll-asset-poster]').forEach(function(n){ n.removeAttribute('data-ll-asset-poster'); });
+    var body=clone.querySelector('body'); if(body) body.classList.remove('ll-hl');
+    return '<!DOCTYPE html>\n'+clone.outerHTML;
+  }
+  function triggerDownload(blob, name){
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download=name; a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  }
+  function downloadExport(){
+    var out = buildExportHTML(); if(out==null) return;
+    var htmlName = state.fileName || 'document.html';
+    var files = swappedFileAssets();
+
+    if(!files.length){
+      triggerDownload(new Blob([out],{type:'text/html'}), htmlName);
+      showToast('✓ Exported '+htmlName);
+      return;
+    }
+
+    if(typeof JSZip !== 'undefined'){
+      var zip = new JSZip();
+      zip.file(htmlName, out);
+      files.forEach(function(rec){
+        var b64 = (rec.cur.swapped.dataURL.split(',')[1]) || '';
+        zip.file(rec.cur.swapped.exportPath, b64, {base64:true});
+      });
+      var zipName = htmlName.replace(/\.html?$/i,'') + '-edited.zip';
+      zip.generateAsync({type:'blob'}).then(function(blob){
+        triggerDownload(blob, zipName);
+        showToast('✓ Exported '+zipName+' — HTML + '+files.length+' asset file'+(files.length>1?'s':''));
+      });
+    } else {
+      // offline fallback: html + each asset as its own download
+      triggerDownload(new Blob([out],{type:'text/html'}), htmlName);
+      files.forEach(function(rec){
+        fetch(rec.cur.swapped.dataURL).then(function(r){return r.blob();}).then(function(blob){
+          triggerDownload(blob, baseName(rec.cur.swapped.exportPath));
+        });
+      });
+      showToast('⚠ ZIP library offline — downloaded files individually; place them at the paths shown in the Assets panel');
+    }
+  }
+
+  // ---- tabs ----
+  function switchTab(which){
+    state.tab = which;
+    tabText.classList.toggle('active', which==='text');
+    tabAssets.classList.toggle('active', which==='assets');
+    layersEl.classList.toggle('hidden', which!=='text');
+    assetsEl.classList.toggle('hidden', which!=='assets');
+    searchEl.placeholder = which==='text' ? 'filter layers…' : 'filter assets…';
+    var f = searchEl.value.toLowerCase().trim();
+    if(which==='text') renderLayers(f); else renderAssets(f);
+  }
+  tabText.addEventListener('click', function(){ switchTab('text'); });
+  tabAssets.addEventListener('click', function(){ switchTab('assets'); });
+
+  // ---- file intake ----
+  function handleFile(file){
+    if(!file) return;
+    if(!/\.html?$/i.test(file.name) && file.type!=='text/html'){ showToast('⚠ Please drop an .html file'); return; }
+    var reader=new FileReader();
+    reader.onload=function(e){
+      loadHTML(e.target.result, file.name);
+      // snapshot pristine svg markup for revert
+      state.assets.forEach(function(rec){
+        if(rec.kind==='svg'){ rec.origHtml = rec.cur.html; }
+        if(rec.kind==='img'){ rec.origSrcset = rec.cur.srcset; }
+      });
+    };
+    reader.readAsText(file);
+  }
+
+  // ---- events ----
+  dropzone.addEventListener('click', function(){ fileInput.click(); });
+  fileInput.addEventListener('change', function(e){ handleFile(e.target.files[0]); fileInput.value=''; });
+  assetFileInput.addEventListener('change', function(e){
+    var f=e.target.files[0];
+    if(f && pendingReplace) handleAssetFile(pendingReplace, f);
+    pendingReplace=null; assetFileInput.value='';
+  });
+  ['dragenter','dragover'].forEach(function(ev){
+    dropzone.addEventListener(ev, function(e){ e.preventDefault(); dropzone.classList.add('hot'); });
+    document.addEventListener(ev, function(e){ e.preventDefault(); });
+  });
+  ['dragleave','drop'].forEach(function(ev){
+    dropzone.addEventListener(ev, function(e){ e.preventDefault(); dropzone.classList.remove('hot'); });
+  });
+  dropzone.addEventListener('drop', function(e){ var f=e.dataTransfer.files[0]; handleFile(f); });
+  document.addEventListener('drop', function(e){ e.preventDefault(); });
+
+  downloadBtn.addEventListener('click', downloadExport);
+  undoBtn.addEventListener('click', undo);
+  redoBtn.addEventListener('click', redo);
+  newBtn.addEventListener('click', function(){
+    state={doc:null,fileName:'',highlight:true,interactive:true,baseUrl:'',exportVersion:0,layers:[],assets:[],tab:'text'};
+    resetHistory();
+    interactiveToggle.classList.add('on');
+    baseUrlEl.value=''; modeHint.textContent='Live mode: click components to interact · double-click text to edit';
+    preview.srcdoc=''; frameWrap.classList.add('hidden'); stageBar.classList.add('hidden');
+    dropzone.classList.remove('hidden'); fileMeta.classList.add('hidden'); newBtn.classList.add('hidden');
+    searchEl.classList.add('hidden'); searchEl.value=''; downloadBtn.disabled=true;
+    fieldCount.textContent='0'; assetCount.textContent='0'; tabTextN.textContent='0'; tabAssetsN.textContent='0';
+    layersEl.innerHTML='<div class="empty-side">No file loaded yet.<br/>Drop an HTML file to detect editable text.</div>';
+    assetsEl.innerHTML='<div class="empty-side">No file loaded yet.<br/>Images, icons &amp; video appear here.</div>';
+    switchTab('text');
+    updateDownloadLabel();
+  });
+  searchEl.addEventListener('input', function(){
+    var f=searchEl.value.toLowerCase().trim();
+    if(state.tab==='text') renderLayers(f); else renderAssets(f);
+  });
+  hlToggle.addEventListener('click', function(){
+    state.highlight=!state.highlight;
+    hlToggle.classList.toggle('on', state.highlight);
+    var pdoc=preview.contentDocument;
+    if(pdoc && pdoc.body) pdoc.body.classList.toggle('ll-hl', state.highlight);
+  });
+  interactiveToggle.addEventListener('click', function(){
+    state.interactive=!state.interactive;
+    interactiveToggle.classList.toggle('on', state.interactive);
+    modeHint.textContent = state.interactive
+      ? 'Live mode: click components to interact · double-click text to edit'
+      : 'Click any text to edit.';
+    renderPreview();
+    showToast(state.interactive ? 'Interactive preview on' : 'Interactive preview off');
+  });
+  var baseTimer;
+  baseUrlEl.addEventListener('input', function(){
+    clearTimeout(baseTimer);
+    baseTimer=setTimeout(function(){
+      var v=baseUrlEl.value.trim();
+      state.baseUrl = v && !/\/$/.test(v) ? v+'/' : v;
+      renderPreview();
+    }, 600);
+  });
+
+  // ---- keyboard: undo/redo + export (works in main doc and inside preview iframe) ----
+  function hotkeys(e){
+    var mod = e.metaKey || e.ctrlKey;
+    if(!mod) return;
+    var k = e.key.toLowerCase();
+    if(k==='s'){ e.preventDefault(); if(!downloadBtn.disabled) downloadExport(); return; }
+    if(k==='z'){ e.preventDefault(); if(e.shiftKey) redo(); else undo(); return; }
+    if(k==='y'){ e.preventDefault(); redo(); return; }
+  }
+  document.addEventListener('keydown', hotkeys, true);
+
+  updateHistoryUI();
+})();
+</script>
+</body>
+</html>
