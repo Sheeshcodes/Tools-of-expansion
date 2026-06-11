@@ -361,7 +361,7 @@
 
   /* ---------- Tool links: open a tool's HTML file when its item is clicked ---------- */
   document.querySelectorAll('.list-item[data-href]').forEach((item) => {
-    item.addEventListener('click', () => { window.location.href = item.getAttribute('data-href'); });
+    item.addEventListener('click', () => { window.open(item.getAttribute('data-href'), '_blank', 'noopener'); });
   });
 
   /* ---------- Breathing wordmark: 100% -> 1000% -> 100%, always looping ---------- */
@@ -424,10 +424,23 @@
     if (which === 'team') { screens.team.scrollTop = 0; revealTeam(); }
     if (which === 'cover') fit();
   }
-  document.getElementById('view-team').addEventListener('click', () => show('team'));
-  document.getElementById('team-back').addEventListener('click', () => show('cover'));
+  function goTeam() {
+    if (screens.team.classList.contains('active')) return;
+    history.pushState({ screen: 'team' }, '');   // add a history entry so browser Back returns to the cover
+    show('team');
+  }
+  function goBack() {
+    // route the on-page back button through history so it and the native Back button stay in sync
+    if (history.state && history.state.screen === 'team') history.back();
+    else show('cover');
+  }
+  window.addEventListener('popstate', (e) => {
+    show(e.state && e.state.screen === 'team' ? 'team' : 'cover');
+  });
+  document.getElementById('view-team').addEventListener('click', goTeam);
+  document.getElementById('team-back').addEventListener('click', goBack);
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && screens.team.classList.contains('active')) show('cover');
+    if (e.key === 'Escape' && screens.team.classList.contains('active')) goBack();
   });
 </script>
 </body>
