@@ -33,15 +33,15 @@
   }
   .screen.active { opacity: 1; visibility: visible; }
 
-  #screen-cover { display: grid; place-items: center; background: #14102e; }
+  #screen-cover { background: #14102e; }
   #screen-team { overflow-y: auto; background: #14102e; }
 
   /* =====================================================================
      COVER
      ===================================================================== */
   .stage {
-    position: relative; width: 1920px; height: 1080px; flex: none;
-    transform-origin: center center;
+    position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px;
+    transform: translate(-50%, -50%); transform-origin: center center;
     background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
     overflow: hidden;
   }
@@ -313,7 +313,7 @@
   const stage = document.getElementById('stage');
   function fit() {
     const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
-    stage.style.transform = `scale(${s})`;
+    stage.style.transform = `translate(-50%, -50%) scale(${s})`;
   }
   window.addEventListener('resize', fit);
   fit();
